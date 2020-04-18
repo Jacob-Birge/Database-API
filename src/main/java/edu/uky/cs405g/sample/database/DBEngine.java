@@ -151,4 +151,33 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
+    public Map<String,String> validateUser(String handleVal, String passVal) {
+        Map<String,String> userIdMap = new HashMap<>();
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT idnum FROM Identity WHERE handle = ? and pass = ?";
+            stmt = conn.prepareStatement(queryString);
+            stmt.setString(1,handleVal);
+            stmt.setString(2,passVal);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String idnum = rs.getString("idnum");
+                userIdMap.put("idnum", idnum);
+            }
+            rs.close();
+            stmt.close();
+            conn.close();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        return userIdMap;
+    } // validateUser()
+
 } // class DBEngine
