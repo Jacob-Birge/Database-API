@@ -137,4 +137,398 @@ public class API {
                 .header("Access-Control-Allow-Origin", "*").build();
     } // exampleBDATE
 
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!", "fullname":"Angus Mize", "location":"Kentucky", "xmail":"none@nowhere.com", "bdate":"1970-07-01"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/createuser
+    //
+    // Output: {"status":"4"} // positive number is the Identity.idnum created.
+    // Output: {"status":"-2", "error":"SQL Constraint Exception"}. [EDIT 04/14]
+    @POST
+    @Path("/createuser")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response createUser(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // createUser()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/seeuser/2
+    // 2 = Identity.idnum
+    // Output: {"status":"1", "handle":"@carlos", "fullname":"Carlos Mize", "location":"Kentucky", "email":carlos@notgmail.com", "bdate":"1970-01-26","joined":"2020-04-01"}
+    // Output: {}. // no match found, could be blocked, user doesn't know.
+    @POST
+    @Path("/seeuser")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response seeUser(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // seeUser()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/suggestions
+    //
+    // Output, status > 0 is the number of suggested people returned
+    // Output: {"status":"3", "idnums":"1,2,4", "handles":"@paul,@carlos","@fake"}
+    // Output: {"status":"0", "error":"no suggestions"}
+    @POST
+    @Path("/suggestions")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response suggestions(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // suggestions()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!", "chapter":"I ate at Mario's!", "url":"http://imagesite.dne/marios.jpg"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/poststory
+    //
+    // Output: {"status":"1"}
+    // Output: {"status":"0", "error":"invalid expires date"}
+    // Output: {"status":"0", "error":"expire date in past"}
+    // Output: {"status":"0", "error":"missing chapter"}
+    @POST
+    @Path("/poststory")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postStory(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // postStory()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!", "likeit":true}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/reprint/45
+    // 45 = Story.sidnum
+    // Output: {"status":"1"}
+    // Output: {"status":"0", "error":"blocked"}
+    // Output: {"status":"0", "error":"story not found"}
+    @POST
+    @Path("/reprint")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response reprint(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // reprint()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/follow/2
+    // 2 = Identity.idnum
+    // Output: {"status":"1"}
+    // Output: {"status":"0", "error":"blocked"}
+    // DNE
+    @POST
+    @Path("/follow")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response follow(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // follow()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/unfollow/2
+    // 2 = Identity.idnum
+    //
+    // Output: {"status":"1"}
+    // Output: {"status":"0", "error":"not currently followed"}
+    @POST
+    @Path("/unfollow")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response unfollow(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // unfollow()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/block/2
+    // 2 = Identity.idnum
+    //
+    // Output: {"status":"1"}
+    // Output: {"status":"0", "error":"DNE"}
+    @POST
+    @Path("/block")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response block(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // block()
+
+    //curl -d '{"handle":"@cooldude42", "password":"mysecret!", "newest":"2020-04-02 15:33:59", "oldest":"2020-03-29 00:00:01"}' \
+    //     -H "Content-Type: application/json" \
+    //     -X POST  http://localhost:9990/api/timeline
+    //
+    // Output: {"0":"{\"type\":\"story\",\"author\":\"@cooldude44\",\"sidnum\":\"14\",\"chapter\":\"Just some set math, SQL is super fun!\",\"posted\":\"2020-04-16 15:37:48\"}","1":"{\"type\":\"reprint\",\"author\":\"@cooldude44\",\"sidnum\":\"15\",\"chapter\":\"JSON objects are fun and useful!\",\"posted\":\"2020-04-15 10:37:44\"}","status":"2"}
+    // Output: {"status":"0"}
+    @POST
+    @Path("/timeline")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response timeline(InputStream inputData) {
+        String responseString = "{\"status_code\":0}";
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
+            String line = null;
+            while ((line=in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+            String jsonString = crunchifyBuilder.toString();
+
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String fooval = myMap.get("foo");
+            String barval = myMap.get("bar");
+            //Here is where you would put your system test,
+            //but this is not required.
+            //We just want to make sure your API is up and active/
+            //status_code = 0 , API is offline
+            //status_code = 1 , API is online
+            responseString = "{\"status_code\":1, "
+                    +"\"foo\":\""+fooval+"\", "
+                    +"\"bar\":\""+barval+"\"}";
+        } catch (Exception ex) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString)
+                .header("Access-Control-Allow-Origin", "*").build();
+    } // timeline()
+
 } // API.java
