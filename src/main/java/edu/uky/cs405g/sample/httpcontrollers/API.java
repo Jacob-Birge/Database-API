@@ -145,6 +145,7 @@ public class API {
     //
     // Output: {"status":"4"} // positive number is the Identity.idnum created.
     // Output: {"status":"-2", "error":"SQL Constraint Exception"}. [EDIT 04/14]
+    //Kyle
     @POST
     @Path("/createuser")
     @Produces(MediaType.APPLICATION_JSON)
@@ -188,6 +189,7 @@ public class API {
     // 2 = Identity.idnum
     // Output: {"status":"1", "handle":"@carlos", "fullname":"Carlos Mize", "location":"Kentucky", "email":carlos@notgmail.com", "bdate":"1970-01-26","joined":"2020-04-01"}
     // Output: {}. // no match found, could be blocked, user doesn't know.
+    //Kyle
     @POST
     @Path("/seeuser")
     @Produces(MediaType.APPLICATION_JSON)
@@ -232,6 +234,7 @@ public class API {
     // Output, status > 0 is the number of suggested people returned
     // Output: {"status":"3", "idnums":"1,2,4", "handles":"@paul,@carlos","@fake"}
     // Output: {"status":"0", "error":"no suggestions"}
+    // Jacob
     @POST
     @Path("/suggestions")
     @Produces(MediaType.APPLICATION_JSON)
@@ -248,16 +251,24 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handleVal = myMap.get("handle");
+            String passVal = myMap.get("password");
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-10, "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else {
+                responseString = Launcher.gson.toJson(teamMap);
+                //Here is where you would put your system test,
+                //but this is not required.
+                //We just want to make sure your API is up and active/
+                //status_code = 0 , API is offline
+                //status_code = 1 , API is online
+                responseString = "{\"status_code\":1, "
+                        + "\"foo\":\"" + handleVal + "\", "
+                        + "\"bar\":\"" + passVal + "\"}";
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -277,6 +288,7 @@ public class API {
     // Output: {"status":"0", "error":"invalid expires date"}
     // Output: {"status":"0", "error":"expire date in past"}
     // Output: {"status":"0", "error":"missing chapter"}
+    // Kelsey
     @POST
     @Path("/poststory")
     @Produces(MediaType.APPLICATION_JSON)
@@ -321,6 +333,7 @@ public class API {
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"blocked"}
     // Output: {"status":"0", "error":"story not found"}
+    // Kelsey
     @POST
     @Path("/reprint")
     @Produces(MediaType.APPLICATION_JSON)
@@ -365,6 +378,7 @@ public class API {
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"blocked"}
     // DNE
+    //Sam
     @POST
     @Path("/follow")
     @Produces(MediaType.APPLICATION_JSON)
@@ -409,6 +423,7 @@ public class API {
     //
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"not currently followed"}
+    //Sam
     @POST
     @Path("/unfollow")
     @Produces(MediaType.APPLICATION_JSON)
@@ -453,6 +468,7 @@ public class API {
     //
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"DNE"}
+    // Jacob
     @POST
     @Path("/block")
     @Produces(MediaType.APPLICATION_JSON)
