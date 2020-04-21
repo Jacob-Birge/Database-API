@@ -151,35 +151,32 @@ public class DBEngine {
         }
         return userIdMap;
     } // getBDATE()
-    
-    public Map<String,String> insertUser(Map<String,String> myMap) {
-        Map<String, String> newUserMap = new HashMap<>();
+
+    public Map<String,String> insertUser(String handle, String pass, String fullname, String location, String email, String bdate) {
+
         PreparedStatement stmt = null;
         try {
             Connection conn = ds.getConnection();
             String queryString = null;
-            queryString = "INSERT INTO Identity (handle, password, fullname, location, email, bdate, joined) " +
-                    "VALUES (" +
-                    myMap.get("handle") + ", " +
-                    myMap.get("password") + ", " +
-                    myMap.get("fullname") + ", " +
-                    myMap.get("location") + ", " +
-                    myMap.get("xmail") + ", " +
-                    myMap.get("bdate") + ", " +
-                    myMap.get("joined") +
-                    ");";
+            queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?,?,?,?,?,?);";
             stmt = conn.prepareStatement(queryString);
-            // No parameters, so no binding needed.
+            stmt.setString(1,handle);
+            stmt.setString(2,pass);
+            stmt.setString(3,fullname);
+            stmt.setString(4,location);
+            stmt.setString(5,email);
+            stmt.setString(6,bdate);
+
             ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                newUserMap.put("idnum", Integer.toString(rs.getInt("idnum")));
-            }
+
             rs.close();
             stmt.close();
             conn.close();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        Map<String, String> newUserMap = new HashMap<>();
+        newUserMap = validateUser(handle, pass);
         return newUserMap;
     }
 
