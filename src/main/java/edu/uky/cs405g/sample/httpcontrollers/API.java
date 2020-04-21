@@ -162,16 +162,19 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            Map<String,String> teamMap = Launcher.dbEngine.insertUser(myMap);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"SQL Constraint Exception\"}";
+            }
+            else {
+                //Here is where you would put your system test,
+                //but this is not required.
+                //We just want to make sure your API is up and active/
+                //status_code = 0 , API is offline
+                //status_code = 1 , API is online
+                responseString = "{\"status_code\":1}";
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));

@@ -90,6 +90,7 @@ public class DBEngine {
         return dataSource;
     } // setupDataSource()
 
+
     public Map<String,String> getUsers() {
         Map<String,String> userIdMap = new HashMap<>();
 
@@ -150,6 +151,37 @@ public class DBEngine {
         }
         return userIdMap;
     } // getBDATE()
+    
+    public Map<String,String> insertUser(Map<String,String> myMap) {
+        Map<String, String> newUserMap = new HashMap<>();
+        PreparedStatement stmt = null;
+        try {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+            queryString = "INSERT INTO Identity (handle, password, fullname, location, email, bdate, joined) " +
+                    "VALUES (" +
+                    myMap.get("handle") + ", " +
+                    myMap.get("password") + ", " +
+                    myMap.get("fullname") + ", " +
+                    myMap.get("location") + ", " +
+                    myMap.get("xmail") + ", " +
+                    myMap.get("bdate") + ", " +
+                    myMap.get("joined") +
+                    ");";
+            stmt = conn.prepareStatement(queryString);
+            // No parameters, so no binding needed.
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                newUserMap.put("idnum", Integer.toString(rs.getInt("idnum")));
+            }
+            rs.close();
+            stmt.close();
+            conn.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return newUserMap;
+    }
 
     public Map<String,String> validateUser(String handleVal, String passVal) {
         Map<String,String> userIdMap = new HashMap<>();
