@@ -253,19 +253,28 @@ public class API {
             String passVal = myMap.get("password");
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
             if (teamMap.isEmpty()){
-                responseString = "{\"status_code\":-10, "
+                responseString = "{\"status\":-10, "
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
-                responseString = Launcher.gson.toJson(teamMap);
-                //Here is where you would put your system test,
-                //but this is not required.
-                //We just want to make sure your API is up and active/
+                int[] suggestions = Launcher.dbEngine.getSuggestions(myMap);
+                int sugLen = 0;
+                for (int idnum : suggestions)
+                    if (idnum != -1)
+                        sugLen++;
+                //responseString = Launcher.gson.toJson(teamMap);
                 //status_code = 0 , API is offline
                 //status_code = 1 , API is online
-                responseString = "{\"status_code\":1, "
-                        + "\"foo\":\"" + handleVal + "\", "
-                        + "\"bar\":\"" + passVal + "\"}";
+                responseString = "{\"status\":" + Integer.toString(sugLen) + ", \"";
+                if (sugLen == 0){
+                    responseString = responseString + "error\":\"no suggestions\"}";
+                }
+                else {
+                    responseString = responseString + "idnums\":\"" + Integer.toString(suggestions[0]);
+                    for (int i=1; i<sugLen; i++)
+                        responseString = responseString + "," + Integer.toString(suggestions[i]);
+                    responseString = responseString + "\"}";
+                }
             }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();

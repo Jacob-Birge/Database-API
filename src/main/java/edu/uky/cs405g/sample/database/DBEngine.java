@@ -151,7 +151,7 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
-    public Map<String,String> validateUser(String handleVal, String passVal) {
+    public Map<String,String> validateUser(String handle, String pass) {
         Map<String,String> userIdMap = new HashMap<>();
         PreparedStatement stmt = null;
         try
@@ -161,8 +161,8 @@ public class DBEngine {
 
             queryString = "SELECT idnum FROM Identity WHERE handle = ? and pass = ?";
             stmt = conn.prepareStatement(queryString);
-            stmt.setString(1,handleVal);
-            stmt.setString(2,passVal);
+            stmt.setString(1,handle);
+            stmt.setString(2,pass);
 
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -180,4 +180,36 @@ public class DBEngine {
         return userIdMap;
     } // validateUser()
 
+    public int[] getSuggestions(Map<String,String> userInfo) {
+        int[] result = new int[] {-1,-1,-1,-1};
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "select distinct ff.followed from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
+            stmt = conn.prepareStatement(queryString);
+            stmt.setString(1, userInfo.get("handle"));
+            stmt.setString(2, userInfo.get("password"));
+            stmt.setString(3, userInfo.get("handle"));
+            stmt.setString(4, userInfo.get("password"));
+
+            ResultSet rs = stmt.executeQuery();
+            int index = 0;
+            while (rs.next()) {
+                int idnum = rs.getInt("ff.followed");
+                result[index] = idnum;
+                index++;
+            }
+            rs.close();
+            stmt.close();
+            conn.close();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        return result;
+    } // getSuggestions()
 } // class DBEngine
