@@ -248,22 +248,20 @@ public class API {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String handleVal = myMap.get("handle");
-            String passVal = myMap.get("password");
+            Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
             //validate the user
-            Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
             if (teamMap.isEmpty()){
-                responseString = "{\"status\":-10, "
+                responseString = "{\"status\":\"-10\", "
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
                 //get follow suggestions
-                Map<String, String> suggestions = Launcher.dbEngine.getSuggestions(myMap);
+                Map<String, String> suggestions = Launcher.dbEngine.getSuggestions(userInfo);
                 //count how many suggestions were found
                 int sugLen = suggestions.size();
                 //build status code portion
-                responseString = "{\"status\":" + Integer.toString(sugLen) + ", \"";
+                responseString = "{\"status\":\"" + Integer.toString(sugLen) + "\", \"";
                 //if no suggestions were found
                 if (sugLen == 0){
                     responseString = responseString + "error\":\"no suggestions\"}";
@@ -493,24 +491,31 @@ public class API {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //get info passed in json
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
+            Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
 
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            //validate the user
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status\":\"-10\", "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else{
+                userInfo.put("idnum", teamMap.get("idnum"));
+                userInfo.put("blockIdnum", idnum);
+                Integer blocked = Launcher.dbEngine.blockUser(userInfo);
+                responseString = "{\"status\":\"" + blocked.toString() + "\"";
+                if (blocked == 0){
+                    responseString += ",\"error\":\"DNE\"";
+                }
+                responseString += "}";
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));

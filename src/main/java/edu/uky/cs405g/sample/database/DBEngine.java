@@ -9,11 +9,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -151,7 +147,7 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
-    public Map<String,String> validateUser(String handle, String pass) {
+    public Map<String,String> validateUser(Map<String, String> userInfo) {
         Map<String,String> userIdMap = new HashMap<>();
         PreparedStatement stmt = null;
         try
@@ -161,8 +157,8 @@ public class DBEngine {
 
             queryString = "SELECT idnum FROM Identity WHERE handle = ? and pass = ?";
             stmt = conn.prepareStatement(queryString);
-            stmt.setString(1,handle);
-            stmt.setString(2,pass);
+            stmt.setString(1,userInfo.get("handle"));
+            stmt.setString(2,userInfo.get("password"));
 
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -211,4 +207,39 @@ public class DBEngine {
         }
         return result;
     } // getSuggestions()
+
+    public Integer blockUser(Map<String,String> userInfo){
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+            try {
+                queryString = "insert into Block (idnum, blocked) values (?,?)";
+                stmt = conn.prepareStatement(queryString);
+                stmt.setString(1, userInfo.get("idnum"));
+                stmt.setString(2, userInfo.get("blockIdnum"));
+
+                int count = stmt.executeUpdate();
+            }
+            catch(SQLException ex){
+                stmt.close();
+                conn.close();
+                return 0;
+            }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            finally {
+                stmt.close();
+                conn.close();
+            }
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        return 1;
+    } // blockUser()
 } // class DBEngine
