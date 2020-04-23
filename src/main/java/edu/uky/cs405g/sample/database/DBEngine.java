@@ -182,7 +182,6 @@ public class DBEngine {
 
     public int followUser(String userRequestingFollow, String userToBeFollowed) {
         int StatusCode = 1;
-        PreparedStatement stmt = null;
         try {
             Connection connection = ds.getConnection();
             Statement selectStmt = connection.createStatement();
@@ -201,7 +200,6 @@ public class DBEngine {
                 else {
                     Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
                     int updateStatus = insertStmt.executeUpdate(Query);
-                    System.out.print(updateStatus);
                     StatusCode = 1;
                 }
             }
@@ -211,6 +209,7 @@ public class DBEngine {
 
             result.close();
             selectStmt.close();
+            blockedStmt.close();
             insertStmt.close();
             connection.close();
         }
@@ -221,4 +220,43 @@ public class DBEngine {
         return StatusCode;
     } // followUser()
 
+    public int unfollowUser(String userRequestingUnfollow, String userToBeUnfollowed) {
+        int StatusCode = 1;
+        try {
+            Connection connection = ds.getConnection();
+            Statement selectStmt = connection.createStatement();
+            Statement followingStmt = connection.createStatement();
+            Statement deleteStmt = connection.createStatement();
+            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingUnfollow + "\";";
+            ResultSet result = selectStmt.executeQuery(Query);
+
+            if (result.next()) {
+                String idnum = result.getString("idnum");
+                Query = "SELECT followed FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
+                ResultSet resultFollow = followingStmt.executeQuery(Query);
+                if (!resultFollow.next()){
+                    StatusCode = 0;
+                }
+                else {
+                    Query = "DELETE FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
+                    int deleteStatus = deleteStmt.executeUpdate(Query);
+                    StatusCode = 1;
+                }
+            }
+            else {
+                StatusCode = -1;
+            }
+
+            result.close();
+            selectStmt.close();
+            followingStmt.close();
+            deleteStmt.close();
+            connection.close();
+        }
+        catch(Exception ex) {
+            StatusCode = -1;
+            ex.printStackTrace();
+        }
+        return StatusCode;
+    } // unfollowUser()
 } // class DBEngine
