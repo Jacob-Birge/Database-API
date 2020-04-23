@@ -180,4 +180,45 @@ public class DBEngine {
         return userIdMap;
     } // validateUser()
 
+    public int followUser(String userRequestingFollow, String userToBeFollowed) {
+        int StatusCode = 1;
+        PreparedStatement stmt = null;
+        try {
+            Connection connection = ds.getConnection();
+            Statement selectStmt = connection.createStatement();
+            Statement blockedStmt = connection.createStatement();
+            Statement insertStmt = connection.createStatement();
+            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingFollow + "\";";
+            ResultSet result = selectStmt.executeQuery(Query);
+
+            if (result.next()) {
+                String idnum = result.getString("idnum");
+                Query = "SELECT blocked FROM Block WHERE idnum ="+userToBeFollowed+";";
+                ResultSet resultBlock = blockedStmt.executeQuery(Query);
+                if (resultBlock.next()){
+                    StatusCode = 0;
+                }
+                else {
+                    Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
+                    int updateStatus = insertStmt.executeUpdate(Query);
+                    System.out.print(updateStatus);
+                    StatusCode = 1;
+                }
+            }
+            else {
+                StatusCode = -1;
+            }
+
+            result.close();
+            selectStmt.close();
+            insertStmt.close();
+            connection.close();
+        }
+        catch(Exception ex) {
+            StatusCode = -1;
+            ex.printStackTrace();
+        }
+        return StatusCode;
+    } // followUser()
+
 } // class DBEngine

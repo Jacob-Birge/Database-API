@@ -378,10 +378,10 @@ public class API {
     // DNE
     //Sam
     @POST
-    @Path("/follow")
+    @Path("/follow/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response follow(InputStream inputData) {
+    public Response follow(@PathParam("idnum") String idnum, InputStream inputData) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
@@ -391,18 +391,43 @@ public class API {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
+            int beginning_index = jsonString.indexOf("@");
+            int end_index = jsonString.indexOf(",") - 1;
+            String username = jsonString.substring(beginning_index, end_index);
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handle = myMap.get("handle");
+            String password = myMap.get("password");
+
+            // Validating User
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(username, password);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"invalid credentials\"}";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+            // Following the user
+            int ResponseStatus = Launcher.dbEngine.followUser(handle, idnum);
+            if (ResponseStatus == 1){
+                responseString = "{\"status_code\":1}";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == 0){
+                responseString = "{\"status_code\":0, "
+                        +"\"error\":\"blocked\"}";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == -1){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"User to be followed does not exist\"}";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -423,10 +448,10 @@ public class API {
     // Output: {"status":"0", "error":"not currently followed"}
     //Sam
     @POST
-    @Path("/unfollow")
+    @Path("/unfollow/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response unfollow(InputStream inputData) {
+    public Response unfollow(@PathParam("idnum") String idnum, InputStream inputData) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
