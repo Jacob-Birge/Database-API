@@ -180,15 +180,15 @@ public class DBEngine {
         return userIdMap;
     } // validateUser()
 
-    public int[] getSuggestions(Map<String,String> userInfo) {
-        int[] result = new int[] {-1,-1,-1,-1};
+    public Map<String, String> getSuggestions(Map<String,String> userInfo) {
+        Map<String,String> result = new HashMap<String, String>();
         PreparedStatement stmt = null;
         try
         {
             Connection conn = ds.getConnection();
             String queryString = null;
 
-            queryString = "select distinct ff.followed from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
+            queryString = "select distinct ff.followed, s.handle from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower join Identity as s on s.idnum = ff.followed where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, userInfo.get("handle"));
             stmt.setString(2, userInfo.get("password"));
@@ -196,11 +196,10 @@ public class DBEngine {
             stmt.setString(4, userInfo.get("password"));
 
             ResultSet rs = stmt.executeQuery();
-            int index = 0;
             while (rs.next()) {
-                int idnum = rs.getInt("ff.followed");
-                result[index] = idnum;
-                index++;
+                String idnum = rs.getString("ff.followed");
+                String handle = rs.getString("s.handle");
+                result.put(idnum, handle);
             }
             rs.close();
             stmt.close();

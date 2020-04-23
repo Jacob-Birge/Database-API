@@ -241,39 +241,48 @@ public class API {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //get info passed in json
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             String handleVal = myMap.get("handle");
             String passVal = myMap.get("password");
+            //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
             if (teamMap.isEmpty()){
                 responseString = "{\"status\":-10, "
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
-                int[] suggestions = Launcher.dbEngine.getSuggestions(myMap);
-                int sugLen = 0;
-                for (int idnum : suggestions)
-                    if (idnum != -1)
-                        sugLen++;
-                //responseString = Launcher.gson.toJson(teamMap);
-                //status_code = 0 , API is offline
-                //status_code = 1 , API is online
+                //get follow suggestions
+                Map<String, String> suggestions = Launcher.dbEngine.getSuggestions(myMap);
+                //count how many suggestions were found
+                int sugLen = suggestions.size();
+                //build status code portion
                 responseString = "{\"status\":" + Integer.toString(sugLen) + ", \"";
+                //if no suggestions were found
                 if (sugLen == 0){
                     responseString = responseString + "error\":\"no suggestions\"}";
                 }
+                //if suggestions were found
                 else {
-                    responseString = responseString + "idnums\":\"" + Integer.toString(suggestions[0]);
-                    for (int i=1; i<sugLen; i++)
-                        responseString = responseString + "," + Integer.toString(suggestions[i]);
-                    responseString = responseString + "\"}";
+                    //get list of idnums and handles for suggestions
+                    String idnums = "";
+                    String handles = "";
+                    for (Map.Entry<String, String> entry : suggestions.entrySet()){
+                        idnums += entry.getKey() + ",";
+                        handles += entry.getValue() + ",";
+                    }
+                    //remove extra comma at end of list
+                    idnums = idnums.substring(0, idnums.length() - 1);
+                    handles = handles.substring(0, handles.length() - 1);
+                    //add lists to json response
+                    responseString = responseString + "idnums\":\"" + idnums + "\",";
+                    responseString = responseString + "\"handles\":\"" + handles + "\"}";
                 }
             }
         } catch (Exception ex) {
@@ -477,10 +486,10 @@ public class API {
     // Output: {"status":"0", "error":"DNE"}
     // Jacob
     @POST
-    @Path("/block")
+    @Path("/block/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response block(InputStream inputData) {
+    public Response block(InputStream inputData, @PathParam("idnum") String idnum) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
