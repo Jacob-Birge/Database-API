@@ -152,13 +152,12 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
-    public Map<String,String> insertUser(String handle, String pass, String fullname, String location, String email, String bdate) {
-
+    public void createUser(String handle, String pass, String fullname, String location, String email, String bdate) {
         PreparedStatement stmt = null;
         try {
             Connection conn = ds.getConnection();
             String queryString = null;
-            queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?,?,?,?,?,?);";
+            queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?, ?, ?, ?, ?, ?)";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1,handle);
             stmt.setString(2,pass);
@@ -175,10 +174,46 @@ public class DBEngine {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        Map<String, String> newUserMap = new HashMap<>();
-        newUserMap = validateUser(handle, pass);
-        return newUserMap;
+        return;
     }
+
+    public Map<String,String> seeUser(String idnum) {
+        Map<String,String> userIdMap = new HashMap<>();
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT * FROM Identity WHERE idnum = ?";
+            stmt = conn.prepareStatement(queryString);
+            stmt.setString(1, idnum);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String handle = rs.getString("handle");
+                userIdMap.put("handle", handle);
+                String fullname = rs.getString("fullname");
+                userIdMap.put("fullname", fullname);
+                String location = rs.getString("location");
+                userIdMap.put("location", location);
+                String email = rs.getString("email");
+                userIdMap.put("email", email);
+                String bdate = rs.getString("bdate");
+                userIdMap.put("bdate", bdate);
+                String joined = rs.getString("joined");
+                userIdMap.put("joined", joined);
+            }
+            rs.close();
+            stmt.close();
+            conn.close();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        return userIdMap;
+    } // seeUser()
 
     public Map<String,String> validateUser(String handleVal, String passVal) {
         Map<String,String> userIdMap = new HashMap<>();

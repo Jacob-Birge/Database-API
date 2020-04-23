@@ -1,6 +1,5 @@
 # Project database schema
 # This is not necessarily needed.
-DROP DATABASE SMPDB;
 CREATE DATABASE SMPDB;
 USE SMPDB;
 
@@ -60,5 +59,5 @@ CREATE TABLE Block
 
 GRANT ALL ON SMPDB.* TO 'paul'@'localhost' IDENTIFIED BY 'jellydonuts!'; 
 GRANT ALL on SMPDB.* TO 'paul'@'belgarath.cs.uky.edu' IDENTIFIED BY 'jellydonuts!'; 
-GRANT ALL on SMPDB.* TO 'paul'@'paul.cs.uky.edu' IDENTIFIED BY 'jellydonuts!'; 
+GRANT ALL on SMPDB.* TO 'paul'@'paul.cs.uky.edu' IDENTIFIED BY 'jellydonuts!';
 FLUSH privileges;
