@@ -169,20 +169,27 @@ public class API {
             String xmailVal = myMap.get("xmail");
             String bdateVal = myMap.get("bdate");
 
-            Launcher.dbEngine.createUser(handleVal, passVal, fullnameVal, locationVal, xmailVal, bdateVal);
-            Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
-            if (teamMap.isEmpty()){
+            int result = Launcher.dbEngine.createUser(handleVal, passVal, fullnameVal, locationVal, xmailVal, bdateVal);
+
+            // check if query seemed to have executed correctly
+            if (result == 0){
                 responseString = "{\"status_code\":-2, "
                         +"\"error\":\"SQL Constraint Exception\"}\n";
             }
-            else {
-                //Here is where you would put your system test,
-                //but this is not required.
-                //We just want to make sure your API is up and active/
-                //status_code = 0 , API is offline
-                //status_code = 1 , API is online
-                responseString = "{\"status_code\":" + teamMap.get("idnum") + "}";
+            else{
+                // check if query inserted correctly
+                Map<String,String> teamMap = Launcher.dbEngine.validateUser(handleVal, passVal);
+                if (teamMap.isEmpty()){
+                    responseString = "{\"status_code\":-2, "
+                            +"\"error\":\"SQL Constraint Exception\"}\n";
+                }
+                else {
+                    //status_code = 0 , API is offline
+                    //status_code = 1 , API is online
+                    responseString = "{\"status_code\":" + teamMap.get("idnum") + "}";
+                }
             }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));

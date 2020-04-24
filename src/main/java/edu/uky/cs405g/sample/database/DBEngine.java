@@ -9,11 +9,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -152,29 +148,39 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
-    public void createUser(String handle, String pass, String fullname, String location, String email, String bdate) {
+    public int createUser(String handle, String pass, String fullname, String location, String email, String bdate) {
         PreparedStatement stmt = null;
         try {
             Connection conn = ds.getConnection();
             String queryString = null;
-            queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?, ?, ?, ?, ?, ?)";
-            stmt = conn.prepareStatement(queryString);
-            stmt.setString(1,handle);
-            stmt.setString(2,pass);
-            stmt.setString(3,fullname);
-            stmt.setString(4,location);
-            stmt.setString(5,email);
-            stmt.setString(6,bdate);
+            try {
+                queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?, ?, ?, ?, ?, ?)";
+                stmt = conn.prepareStatement(queryString);
+                stmt.setString(1, handle);
+                stmt.setString(2, pass);
+                stmt.setString(3, fullname);
+                stmt.setString(4, location);
+                stmt.setString(5, email);
+                stmt.setString(6, bdate);
 
-            ResultSet rs = stmt.executeQuery();
-
-            rs.close();
-            stmt.close();
-            conn.close();
+                int count = stmt.executeUpdate();
+            }
+            catch(SQLException ex){
+                stmt.close();
+                conn.close();
+                return 0;
+            }
+            catch(Exception ex){
+                ex.printStackTrace();
+            }
+            finally{
+                stmt.close();
+                conn.close();
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return;
+        return 1;
     }
 
     public Map<String,String> seeUser(String idnum) {
