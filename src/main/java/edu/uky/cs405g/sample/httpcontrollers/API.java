@@ -11,8 +11,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+// test comment
 
 @Path("/api")
 public class API {
@@ -143,6 +146,7 @@ public class API {
     //
     // Output: {"status":"4"} // positive number is the Identity.idnum created.
     // Output: {"status":"-2", "error":"SQL Constraint Exception"}. [EDIT 04/14]
+    //Kyle
     @POST
     @Path("/createuser")
     @Produces(MediaType.APPLICATION_JSON)
@@ -159,16 +163,37 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handleVal = myMap.get("handle");
+            String passVal = myMap.get("pass");
+            String fullnameVal = myMap.get("fullname");
+            String locationVal = myMap.get("location");
+            String xmailVal = myMap.get("xmail");
+            String bdateVal = myMap.get("bdate");
+
+            int result = Launcher.dbEngine.createUser(handleVal, passVal, fullnameVal, locationVal, xmailVal, bdateVal);
+
+            // check if query seemed to have executed correctly
+            if (result == 0){
+                responseString = "{\"status_code\":-2, "
+                        +"\"error\":\"SQL Constraint Exception\"}\n";
+            }
+            else{
+                // check if query inserted correctly
+                Map<String, String> userInfo = new HashMap<>();
+                userInfo.put("handle", handleVal);
+                userInfo.put("password", passVal);
+                Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+                if (teamMap.isEmpty()){
+                    responseString = "{\"status_code\":-2, "
+                            +"\"error\":\"SQL Constraint Exception\"}\n";
+                }
+                else {
+                    //status_code = 0 , API is offline
+                    //status_code = 1 , API is online
+                    responseString = "{\"status_code\":" + teamMap.get("idnum") + "}";
+                }
+            }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -186,11 +211,12 @@ public class API {
     // 2 = Identity.idnum
     // Output: {"status":"1", "handle":"@carlos", "fullname":"Carlos Mize", "location":"Kentucky", "email":carlos@notgmail.com", "bdate":"1970-01-26","joined":"2020-04-01"}
     // Output: {}. // no match found, could be blocked, user doesn't know.
+    //Kyle
     @POST
-    @Path("/seeuser")
+    @Path("/seeuser/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response seeUser(InputStream inputData) {
+    public Response seeUser(InputStream inputData, @PathParam("idnum") String idnum) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
@@ -202,16 +228,34 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-10, "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else {
+                //status_code = 0 , API is offline
+                //status_code = 1 , API is online
+                Map<String,String> userMap = Launcher.dbEngine.seeUser(idnum);
+                if (userMap.isEmpty()){
+                    responseString = "{}";
+                }
+                else {
+                    String handle = userMap.get("handle");
+                    String fullname = userMap.get("fullname");
+                    String location = userMap.get("location");
+                    String email = userMap.get("email");
+                    String bdate = userMap.get("bdate");
+                    String joined = userMap.get("joined");
+                    responseString = "{\"status_code\":1, "
+                            + "\"handle\":\"" + handle + "\", "
+                            + "\"fullname\":\"" + fullname + "\", "
+                            + "\"location\":\"" + location + "\", "
+                            + "\"email\":\"" + email + "\", "
+                            + "\"bdate\":\"" + bdate + "\", "
+                            + "\"joined\":\"" + joined + "\"}";
+                }
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -230,6 +274,7 @@ public class API {
     // Output, status > 0 is the number of suggested people returned
     // Output: {"status":"3", "idnums":"1,2,4", "handles":"@paul,@carlos","@fake"}
     // Output: {"status":"0", "error":"no suggestions"}
+    // Jacob
     @POST
     @Path("/suggestions")
     @Produces(MediaType.APPLICATION_JSON)
@@ -238,24 +283,48 @@ public class API {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //get info passed in json
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
+            //validate the user
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status\":\"-10\", "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else {
+                //get follow suggestions
+                Map<String, String> suggestions = Launcher.dbEngine.getSuggestions(userInfo);
+                //count how many suggestions were found
+                int sugLen = suggestions.size();
+                //build status code portion
+                responseString = "{\"status\":\"" + Integer.toString(sugLen) + "\", \"";
+                //if no suggestions were found
+                if (sugLen == 0){
+                    responseString = responseString + "error\":\"no suggestions\"}";
+                }
+                //if suggestions were found
+                else {
+                    //get list of idnums and handles for suggestions
+                    String idnums = "";
+                    String handles = "";
+                    for (Map.Entry<String, String> entry : suggestions.entrySet()){
+                        idnums += entry.getKey() + ",";
+                        handles += entry.getValue() + ",";
+                    }
+                    //remove extra comma at end of list
+                    idnums = idnums.substring(0, idnums.length() - 1);
+                    handles = handles.substring(0, handles.length() - 1);
+                    //add lists to json response
+                    responseString = responseString + "idnums\":\"" + idnums + "\",";
+                    responseString = responseString + "\"handles\":\"" + handles + "\"}";
+                }
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -275,6 +344,7 @@ public class API {
     // Output: {"status":"0", "error":"invalid expires date"}
     // Output: {"status":"0", "error":"expire date in past"}
     // Output: {"status":"0", "error":"missing chapter"}
+    // Kelsey
     @POST
     @Path("/poststory")
     @Produces(MediaType.APPLICATION_JSON)
@@ -319,6 +389,7 @@ public class API {
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"blocked"}
     // Output: {"status":"0", "error":"story not found"}
+    // Kelsey
     @POST
     @Path("/reprint")
     @Produces(MediaType.APPLICATION_JSON)
@@ -363,12 +434,13 @@ public class API {
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"blocked"}
     // DNE
+    //Sam
     @POST
-    @Path("/follow")
+    @Path("/follow/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response follow(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+    public Response follow(@PathParam("idnum") String idnum, InputStream inputData) {
+        String responseString = "{\"status_code\":0}\n";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
@@ -379,16 +451,37 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handle = myMap.get("handle");
+
+            // Validating User
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"invalid credentials\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+            // Following the user
+            int ResponseStatus = Launcher.dbEngine.followUser(handle, idnum);
+            if (ResponseStatus == 1){
+                responseString = "{\"status_code\":1}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == 0){
+                responseString = "{\"status_code\":0, "
+                        +"\"error\":\"blocked\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == -1){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"User to be followed does not exist\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -407,12 +500,13 @@ public class API {
     //
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"not currently followed"}
+    //Sam
     @POST
-    @Path("/unfollow")
+    @Path("/unfollow/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response unfollow(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+    public Response unfollow(@PathParam("idnum") String idnum, InputStream inputData) {
+        String responseString = "{\"status_code\":0}\n";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
@@ -421,18 +515,38 @@ public class API {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handle = myMap.get("handle");
+
+            // Validating User
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"invalid credentials\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+            // Unfollowing the user
+            int ResponseStatus = Launcher.dbEngine.unfollowUser(handle, idnum);
+            if (ResponseStatus == 1){
+                responseString = "{\"status_code\":1}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == 0){
+                responseString = "{\"status_code\":0, "
+                        +"\"error\":\"not currently followed\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == -1){
+                responseString = "{\"status_code\":-1, "
+                        +"\"error\":\"User to be unfollowed does not exist\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -451,32 +565,40 @@ public class API {
     //
     // Output: {"status":"1"}
     // Output: {"status":"0", "error":"DNE"}
+    // Jacob
     @POST
-    @Path("/block")
+    @Path("/block/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response block(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+    public Response block(InputStream inputData, @PathParam("idnum") String idnum) {
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //get info passed in json
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
+            Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
 
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            //validate the user
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status\":\"-10\", "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else{
+                userInfo.put("idnum", teamMap.get("idnum"));
+                userInfo.put("blockIdnum", idnum);
+                Integer blocked = Launcher.dbEngine.blockUser(userInfo);
+                responseString = "{\"status\":\"" + blocked.toString() + "\"";
+                if (blocked == 0){
+                    responseString += ",\"error\":\"DNE\"";
+                }
+                responseString += "}";
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
