@@ -11,8 +11,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+// test comment
 
 @Path("/api")
 public class API {
@@ -160,16 +163,37 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            String handleVal = myMap.get("handle");
+            String passVal = myMap.get("pass");
+            String fullnameVal = myMap.get("fullname");
+            String locationVal = myMap.get("location");
+            String xmailVal = myMap.get("xmail");
+            String bdateVal = myMap.get("bdate");
+
+            int result = Launcher.dbEngine.createUser(handleVal, passVal, fullnameVal, locationVal, xmailVal, bdateVal);
+
+            // check if query seemed to have executed correctly
+            if (result == 0){
+                responseString = "{\"status_code\":-2, "
+                        +"\"error\":\"SQL Constraint Exception\"}\n";
+            }
+            else{
+                // check if query inserted correctly
+                Map<String, String> userInfo = new HashMap<>();
+                userInfo.put("handle", handleVal);
+                userInfo.put("password", passVal);
+                Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+                if (teamMap.isEmpty()){
+                    responseString = "{\"status_code\":-2, "
+                            +"\"error\":\"SQL Constraint Exception\"}\n";
+                }
+                else {
+                    //status_code = 0 , API is offline
+                    //status_code = 1 , API is online
+                    responseString = "{\"status_code\":" + teamMap.get("idnum") + "}";
+                }
+            }
+
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -189,10 +213,10 @@ public class API {
     // Output: {}. // no match found, could be blocked, user doesn't know.
     //Kyle
     @POST
-    @Path("/seeuser")
+    @Path("/seeuser/{idnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response seeUser(InputStream inputData) {
+    public Response seeUser(InputStream inputData, @PathParam("idnum") String idnum) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
@@ -204,16 +228,34 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
+            if (teamMap.isEmpty()){
+                responseString = "{\"status_code\":-10, "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else {
+                //status_code = 0 , API is offline
+                //status_code = 1 , API is online
+                Map<String,String> userMap = Launcher.dbEngine.seeUser(idnum);
+                if (userMap.isEmpty()){
+                    responseString = "{}";
+                }
+                else {
+                    String handle = userMap.get("handle");
+                    String fullname = userMap.get("fullname");
+                    String location = userMap.get("location");
+                    String email = userMap.get("email");
+                    String bdate = userMap.get("bdate");
+                    String joined = userMap.get("joined");
+                    responseString = "{\"status_code\":1, "
+                            + "\"handle\":\"" + handle + "\", "
+                            + "\"fullname\":\"" + fullname + "\", "
+                            + "\"location\":\"" + location + "\", "
+                            + "\"email\":\"" + email + "\", "
+                            + "\"bdate\":\"" + bdate + "\", "
+                            + "\"joined\":\"" + joined + "\"}";
+                }
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
