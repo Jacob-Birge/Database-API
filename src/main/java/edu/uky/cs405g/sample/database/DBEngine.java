@@ -242,4 +242,85 @@ public class DBEngine {
         }
         return 1;
     } // blockUser()
+
+    public int followUser(String userRequestingFollow, String userToBeFollowed) {
+        int StatusCode = 1;
+        try {
+            Connection connection = ds.getConnection();
+            Statement selectStmt = connection.createStatement();
+            Statement blockedStmt = connection.createStatement();
+            Statement insertStmt = connection.createStatement();
+            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingFollow + "\";";
+            ResultSet result = selectStmt.executeQuery(Query);
+
+            if (result.next()) {
+                String idnum = result.getString("idnum");
+                Query = "SELECT blocked FROM Block WHERE idnum ="+userToBeFollowed+";";
+                ResultSet resultBlock = blockedStmt.executeQuery(Query);
+                if (resultBlock.next()){
+                    StatusCode = 0;
+                }
+                else {
+                    Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
+                    int updateStatus = insertStmt.executeUpdate(Query);
+                    StatusCode = 1;
+                }
+            }
+            else {
+                StatusCode = -1;
+            }
+
+            result.close();
+            selectStmt.close();
+            blockedStmt.close();
+            insertStmt.close();
+            connection.close();
+        }
+        catch(Exception ex) {
+            StatusCode = -1;
+            ex.printStackTrace();
+        }
+        return StatusCode;
+    } // followUser()
+
+    public int unfollowUser(String userRequestingUnfollow, String userToBeUnfollowed) {
+        int StatusCode = 1;
+        try {
+            Connection connection = ds.getConnection();
+            Statement selectStmt = connection.createStatement();
+            Statement followingStmt = connection.createStatement();
+            Statement deleteStmt = connection.createStatement();
+            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingUnfollow + "\";";
+            ResultSet result = selectStmt.executeQuery(Query);
+
+            if (result.next()) {
+                String idnum = result.getString("idnum");
+                Query = "SELECT followed FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
+                ResultSet resultFollow = followingStmt.executeQuery(Query);
+                if (!resultFollow.next()){
+                    StatusCode = 0;
+                }
+                else {
+                    Query = "DELETE FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
+                    int deleteStatus = deleteStmt.executeUpdate(Query);
+                    StatusCode = 1;
+                }
+            }
+            else {
+                StatusCode = -1;
+            }
+
+            result.close();
+            selectStmt.close();
+            followingStmt.close();
+            deleteStmt.close();
+            connection.close();
+        }
+        catch(Exception ex) {
+            StatusCode = -1;
+            ex.printStackTrace();
+        }
+        return StatusCode;
+    } // unfollowUser()
+
 } // class DBEngine
