@@ -488,7 +488,7 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response block(InputStream inputData, @PathParam("idnum") String idnum) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
             //get info passed in json
