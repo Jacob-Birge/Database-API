@@ -397,4 +397,8 @@ public class DBEngine {
         return StatusCode;
     } // unfollowUser()
 
+    public List<Map<String, String>> getTimeline(){
+        List<Map<String, String>> result = new ArrayList<>();
+        return result;
+    } // getTimeline()
 } // class DBEngine

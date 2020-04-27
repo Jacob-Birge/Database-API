@@ -11,9 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 // test comment
 
@@ -631,17 +629,26 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
 
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
+            Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
+            Map<String,String> validation = Launcher.dbEngine.validateUser(userInfo);
+            if (validation.isEmpty()){
+                responseString = "{\"status\":\"-10\", "
+                        +"\"error\":\"invalid credentials\"}";
+            }
+            else {
+                List<Map<String, String>> stories = Launcher.dbEngine.getTimeline();
+                responseString = "{";
+                for (int i=0; i<stories.size(); i++){
+                    Map<String, String> currStory = stories.get(i);
+                    responseString += "\"" + i + "\":\"{";
+                    responseString += "\"type\":\"" + currStory.get("type") + "\"";
+                    responseString += ",\"author\":\"" + currStory.get("author") + "\"";
+                    responseString += ",\"sidnum\":\"" + currStory.get("sidnum") + "\"";
+                    responseString += ",\"chapter\":\"" + currStory.get("chapter") + "\"";
+                    responseString += ",\"posted\":\"" + currStory.get("posted") + "\"}\"";
+                }
+                responseString += "\"status\":\"" + stories.size() + "\"}";
+            }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
