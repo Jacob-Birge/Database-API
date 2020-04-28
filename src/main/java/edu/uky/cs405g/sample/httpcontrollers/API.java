@@ -636,7 +636,7 @@ public class API {
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
-                List<Map<String, String>> stories = Launcher.dbEngine.getTimeline();
+                List<Map<String, String>> stories = Launcher.dbEngine.getTimeline(userInfo);
                 responseString = "{";
                 for (int i=0; i<stories.size(); i++){
                     Map<String, String> currStory = stories.get(i);

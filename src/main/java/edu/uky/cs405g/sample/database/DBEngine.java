@@ -397,8 +397,47 @@ public class DBEngine {
         return StatusCode;
     } // unfollowUser()
 
-    public List<Map<String, String>> getTimeline(){
+    public List<Map<String, String>> getTimeline(Map<String, String> userInfo){
         List<Map<String, String>> result = new ArrayList<>();
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+            try {
+                queryString = "select idnum from Block ";
+                stmt = conn.prepareStatement(queryString);
+                stmt.setString(1, userInfo.get("idnum"));
+                stmt.setString(2, userInfo.get("blockIdnum"));
+
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    Map<String, String> story = new HashMap<String, String>();
+                    String idnum = rs.getString("ff.followed");
+                    String handle = rs.getString("s.handle");
+                    story.put(idnum, handle);
+                    result.add(story);
+                }
+                rs.close();
+            }
+            catch(SQLException ex){
+                stmt.close();
+                conn.close();
+                return result;
+            }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            finally {
+                stmt.close();
+                conn.close();
+            }
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
         return result;
     } // getTimeline()
 } // class DBEngine
