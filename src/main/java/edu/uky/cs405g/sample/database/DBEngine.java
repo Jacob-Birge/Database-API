@@ -397,8 +397,42 @@ public class DBEngine {
         return StatusCode;
     } // unfollowUser()
 
-    public List<Map<String, String>> getTimeline(){
-        List<Map<String, String>> result = new ArrayList<>();
-        return result;
+    public List<Map<String, String>> getTimeline(String idnum, String newest, String oldest){
+        List<Map<String, String>> timeline = new ArrayList<>();
+        PreparedStatement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT * FROM Story WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
+            + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
+            + "AND tstamp >= ? AND tstamp <= ? AND (CURRENT_TIMESTAMP < expires OR expires IS NULL) "
+            + "UNION SELECT * FROM Reprint WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
+            + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
+            + "AND tstamp >= ? AND tstamp <= ? "
+            + "AND (CURRENT_TIMESTAMP < expires OR expires IS NULL);";
+            stmt = conn.prepareStatement(queryString);
+            stmt.setString(1, idnum);
+            stmt.setString(2, idnum);
+            stmt.setString(3, oldest);
+            stmt.setString(4, newest);
+            stmt.setString(5, idnum);
+            stmt.setString(6, idnum);
+            stmt.setString(7, oldest);
+            stmt.setString(8, newest);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+
+            }
+            rs.close();
+            stmt.close();
+            conn.close();
+        }
+        catch(Exception ex) {
+            ex.printStackTrace();
+        }
+        return timeline;
     } // getTimeline()
 } // class DBEngine
