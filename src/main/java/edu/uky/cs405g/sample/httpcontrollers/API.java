@@ -636,9 +636,9 @@ public class API {
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
-                String idnum = "";
-                String newest = "";
-                String oldest = "";
+                String idnum = validation.get("idnum");
+                String newest = userInfo.get("newest");
+                String oldest = userInfo.get("oldest");
                 List<Map<String, String>> stories = Launcher.dbEngine.getTimeline(idnum, newest, oldest);
                 responseString = "{";
                 for (int i=0; i<stories.size(); i++){

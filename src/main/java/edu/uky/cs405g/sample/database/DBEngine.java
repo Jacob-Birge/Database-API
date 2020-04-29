@@ -257,7 +257,7 @@ public class DBEngine {
         {
             Connection conn = ds.getConnection();
             String queryString = null;
-            
+
             queryString = "select distinct ff.followed, s.handle from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower join Identity as s on s.idnum = ff.followed where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, userInfo.get("handle"));
@@ -400,6 +400,7 @@ public class DBEngine {
     public List<Map<String, String>> getTimeline(String idnum, String newest, String oldest){
         List<Map<String, String>> timeline = new ArrayList<>();
         PreparedStatement stmt = null;
+        int size = 0;
         try
         {
             Connection conn = ds.getConnection();
@@ -407,24 +408,27 @@ public class DBEngine {
 
             queryString = "SELECT * FROM Story WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
             + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
-            + "AND tstamp >= ? AND tstamp <= ? AND (CURRENT_TIMESTAMP < expires OR expires IS NULL) "
-
-
-            + "UNION "
-            + "";
+            + "AND tstamp >= ? AND tstamp <= ? AND (CURRENT_TIMESTAMP < expires OR expires IS NULL)";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
             stmt.setString(2, idnum);
             stmt.setString(3, oldest);
             stmt.setString(4, newest);
-            stmt.setString(5, idnum);
-            stmt.setString(6, idnum);
-            stmt.setString(7, oldest);
-            stmt.setString(8, newest);
 
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-
+                Map<String,String> thisPost = new HashMap<String, String>();
+                String type = rs.getString("type");
+                thisPost.put("type", type);
+                String author = rs.getString("handle");
+                thisPost.put("author", author);
+                String sidnum = rs.getString("sidnum");
+                thisPost.put("sidnum", sidnum);
+                String chapter = rs.getString("chapter");
+                thisPost.put("chapter", chapter);
+                String posted = rs.getString("date");
+                thisPost.put("posted", posted);
+                timeline.add(thisPost);
             }
             rs.close();
             stmt.close();
