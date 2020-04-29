@@ -40,7 +40,7 @@ public class API {
             //We just want to make sure your API is up and active/
             //status_code = 0 , API is offline
             //status_code = 1 , API is online
-            responseString = "{\"status_code\":1}";
+            responseString = "{\"status\":1}";
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -102,7 +102,7 @@ public class API {
             //We just want to make sure your API is up and active/
             //status_code = 0 , API is offline
             //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
+            responseString = "{\"status\":1, "
 					+"\"foo\":\""+fooval+"\", "
 					+"\"bar\":\""+barval+"\"}";
         } catch (Exception ex) {
@@ -162,7 +162,7 @@ public class API {
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             String handleVal = myMap.get("handle");
-            String passVal = myMap.get("pass");
+            String passVal = myMap.get("password");
             String fullnameVal = myMap.get("fullname");
             String locationVal = myMap.get("location");
             String xmailVal = myMap.get("xmail");
@@ -172,7 +172,7 @@ public class API {
 
             // check if query seemed to have executed correctly
             if (result == 0){
-                responseString = "{\"status_code\":-2, "
+                responseString = "{\"status\":-2, "
                         +"\"error\":\"SQL Constraint Exception\"}\n";
             }
             else{
@@ -182,13 +182,13 @@ public class API {
                 userInfo.put("password", passVal);
                 Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
                 if (teamMap.isEmpty()){
-                    responseString = "{\"status_code\":-2, "
+                    responseString = "{\"status\":-2, "
                             +"\"error\":\"SQL Constraint Exception\"}\n";
                 }
                 else {
                     //status_code = 0 , API is offline
                     //status_code = 1 , API is online
-                    responseString = "{\"status_code\":" + teamMap.get("idnum") + "}";
+                    responseString = "{\"status\":" + teamMap.get("idnum") + "}";
                 }
             }
 
@@ -228,7 +228,7 @@ public class API {
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status_code\":-10, "
+                responseString = "{\"status\":-10, "
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
@@ -245,7 +245,7 @@ public class API {
                     String email = userMap.get("email");
                     String bdate = userMap.get("bdate");
                     String joined = userMap.get("joined");
-                    responseString = "{\"status_code\":1, "
+                    responseString = "{\"status\":1, "
                             + "\"handle\":\"" + handle + "\", "
                             + "\"fullname\":\"" + fullname + "\", "
                             + "\"location\":\"" + location + "\", "
@@ -454,7 +454,7 @@ public class API {
             // Validating User
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status_code\":-1, "
+                responseString = "{\"status\":-1, "
                         +"\"error\":\"invalid credentials\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
@@ -463,18 +463,18 @@ public class API {
             // Following the user
             int ResponseStatus = Launcher.dbEngine.followUser(handle, idnum);
             if (ResponseStatus == 1){
-                responseString = "{\"status_code\":1}\n";
+                responseString = "{\"status\":1}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
             else if (ResponseStatus == 0){
-                responseString = "{\"status_code\":0, "
+                responseString = "{\"status\":0, "
                         +"\"error\":\"blocked\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
             else if (ResponseStatus == -1){
-                responseString = "{\"status_code\":-1, "
+                responseString = "{\"status\":-1, "
                         +"\"error\":\"User to be followed does not exist\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
@@ -504,7 +504,7 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response unfollow(@PathParam("idnum") String idnum, InputStream inputData) {
-        String responseString = "{\"status_code\":0}\n";
+        String responseString = "{\"status\":0}\n";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
@@ -519,7 +519,7 @@ public class API {
             // Validating User
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status_code\":-1, "
+                responseString = "{\"status\":-1, "
                         +"\"error\":\"invalid credentials\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
@@ -528,18 +528,18 @@ public class API {
             // Unfollowing the user
             int ResponseStatus = Launcher.dbEngine.unfollowUser(handle, idnum);
             if (ResponseStatus == 1){
-                responseString = "{\"status_code\":1}\n";
+                responseString = "{\"status\":1}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
             else if (ResponseStatus == 0){
-                responseString = "{\"status_code\":0, "
+                responseString = "{\"status\":0, "
                         +"\"error\":\"not currently followed\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
             else if (ResponseStatus == -1){
-                responseString = "{\"status_code\":-1, "
+                responseString = "{\"status\":-1, "
                         +"\"error\":\"User to be unfollowed does not exist\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
@@ -636,7 +636,10 @@ public class API {
                         +"\"error\":\"invalid credentials\"}";
             }
             else {
-                List<Map<String, String>> stories = Launcher.dbEngine.getTimeline();
+                String idnum = "";
+                String newest = "";
+                String oldest = "";
+                List<Map<String, String>> stories = Launcher.dbEngine.getTimeline(idnum, newest, oldest);
                 responseString = "{";
                 for (int i=0; i<stories.size(); i++){
                     Map<String, String> currStory = stories.get(i);

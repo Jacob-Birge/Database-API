@@ -257,7 +257,7 @@ public class DBEngine {
         {
             Connection conn = ds.getConnection();
             String queryString = null;
-
+            
             queryString = "select distinct ff.followed, s.handle from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower join Identity as s on s.idnum = ff.followed where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, userInfo.get("handle"));
@@ -408,10 +408,10 @@ public class DBEngine {
             queryString = "SELECT * FROM Story WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
             + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
             + "AND tstamp >= ? AND tstamp <= ? AND (CURRENT_TIMESTAMP < expires OR expires IS NULL) "
-            + "UNION SELECT * FROM Reprint WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
-            + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
-            + "AND tstamp >= ? AND tstamp <= ? "
-            + "AND (CURRENT_TIMESTAMP < expires OR expires IS NULL);";
+
+
+            + "UNION "
+            + "";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
             stmt.setString(2, idnum);
