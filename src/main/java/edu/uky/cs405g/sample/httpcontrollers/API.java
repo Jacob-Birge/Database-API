@@ -372,6 +372,7 @@ public class API {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //get info passed in json
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -379,17 +380,36 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
 
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
+            Map<String, String> storyInfo = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+
+            for (String key : storyInfo.keySet()) {
+                String input = storyInfo.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                storyInfo.put(key, input);
+            }
+
+            //validate the user
+            Map<String,String> teamMap = Launcher.dbEngine.validateUser(storyInfo);
+            if(teamMap.isEmpty()){
+                responseString = "{\"status\":-10, "+"\"error\":\"invalid credentials\"}";
+            } else{
+
+                storyInfo.put("idnum", teamMap.get("idnum"));
+                Integer story = Launcher.dbEngine.createStory(storyInfo);
+                if (story == 1) {
+                    responseString = "{\"status\": \"1\"}";
+                } else{
+                    responseString = "{\"status\": \"0\"}";
+                }
+            }
+
             //Here is where you would put your system test,
             //but this is not required.
             //We just want to make sure your API is up and active/
             //status_code = 0 , API is offline
             //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -410,10 +430,10 @@ public class API {
     // Output: {"status":"0", "error":"story not found"}
     // Kelsey
     @POST
-    @Path("/reprint")
+    @Path("/reprint/{sidnum}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response reprint(InputStream inputData) {
+    public Response reprint(@PathParam("sidnum") String sidnum, InputStream inputData) {
         String responseString = "{\"status_code\":0}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
@@ -423,18 +443,35 @@ public class API {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
+            Map<String, String> reprintInfo = gson.fromJson(jsonString, mapType);
+            //check user credentials
+            Map<String, String> teamMap = Launcher.dbEngine.validateUser(reprintInfo);
+            if(teamMap.isEmpty()){
+                responseString = "{\"status\":-10, "+"\"error\":\"invalid credentials\"}";
+            } else {
+                Integer reprint_id = 0;
+                Integer num_reprints = Launcher.dbEngine.getReprintCount();
+                if (num_reprints != -10){
+                    reprint_id = num_reprints + 1;
+                }
+                reprintInfo.put("rpnum", Integer.toString(reprint_id));
+                reprintInfo.put("sidnum", sidnum);
+                reprintInfo.put("idnum", teamMap.get("idnum"));
+                //if the user is blocked, don't let them "reprint"
+                if (Launcher.dbEngine.isBlocked(reprintInfo) == 0){
+                    responseString = "{\"status\": \"0\",\"error\": \"blocked\"}";
+                } else {
+                    Integer status = Launcher.dbEngine.reprint(reprintInfo);
+                    if (status == 1) { //everything was A-OK
+                        responseString = "{\"status\": \"1\"}";
+                    } else if (status == 1452) { //the story number didn't exist
+                        responseString = "{\"status\": \"0\",\"error\": \"story not found\"}";
+                    } else { //some other tomfoolery
+                        responseString = "{\"status\": 0\"} ";
+                    }
+                }
+            }
 
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String fooval = myMap.get("foo");
-            String barval = myMap.get("bar");
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
-            responseString = "{\"status_code\":1, "
-                    +"\"foo\":\""+fooval+"\", "
-                    +"\"bar\":\""+barval+"\"}";
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
