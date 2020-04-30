@@ -148,32 +148,6 @@ public class DBEngine {
         return userIdMap;
     } // getBDATE()
 
-    public Integer getStoryCount() {
-        PreparedStatement stmt = null;
-        try {
-            Connection connect = ds.getConnection();
-            try {
-                String queryString = null;
-                queryString = "SELECT COUNT(*) as num_stories FROM Story";
-                ResultSet rs = stmt.executeQuery();
-                Integer num_stories = rs.getInt("num_stories");
-                return num_stories;
-            } catch (SQLException throwables) {
-                stmt.close();
-                connect.close();
-                return -10;
-            } catch (Exception throwables) {
-                throwables.printStackTrace();
-            } finally {
-                stmt.close();
-                connect.close();
-            }
-        } catch (Exception throwables){
-            throwables.printStackTrace();
-        }
-        return -2;
-    } //getStoryCount
-
     public Integer createStory(Map<String,String> storyInfo) {
         PreparedStatement stmt = null;
 
@@ -205,33 +179,6 @@ public class DBEngine {
         return 1;
     } //createStory
 
-    public Integer getReprintCount() {
-        PreparedStatement stmt = null;
-        Integer num_reprints = 1;
-        try {
-            Connection connect = ds.getConnection();
-            try {
-                String queryString = null;
-                queryString = "SELECT COUNT(*) as num_reprints FROM Reprint";
-                stmt = connect.prepareStatement(queryString);
-                ResultSet rs = stmt.executeQuery();
-                num_reprints = rs.getInt("num_reprints");
-            } catch (SQLException throwables) {
-                stmt.close();
-                connect.close();
-                return -10;
-            } catch (Exception throwables) {
-                throwables.printStackTrace();
-            } finally {
-                stmt.close();
-                connect.close();
-            }
-        } catch (Exception throwables){
-            throwables.printStackTrace();
-        }
-        return num_reprints;
-    } //getReprintCount
-
     public Integer isBlocked(Map<String,String> reprintInfo) throws SQLException {
         Connection connect = ds.getConnection();
         try {
@@ -239,11 +186,18 @@ public class DBEngine {
             Statement select_stmt = connect.createStatement();
             String query = "SELECT idnum FROM Story WHERE sidnum = " + reprintInfo.get("sidnum") + ";";
             ResultSet select_result = select_stmt.executeQuery(query);
-            String poster_id = select_result.getString("idnum");
+            String poster_id = null;
+            while (select_result.next()) {
+                poster_id = select_result.getString("idnum");
+            }
 
             String blockQuery = "SELECT idnum, blocked from Block WHERE blocked =" + reprintInfo.get("idnum") + " AND idnum = " + poster_id + ";";
             ResultSet block_result = blocked_stmt.executeQuery(blockQuery);
-            if (!block_result.isBeforeFirst()) {
+            int count = 0;
+            while (block_result.next()) {
+                count += 1;
+            }
+            if (count > 0){
                 return 0;
             }
         } catch (SQLException throwables) {
@@ -269,17 +223,14 @@ public class DBEngine {
                     like_boolean = 1;
                 }
                 String queryString = null;
-                queryString = "INSERT INTO Reprint (sidnum, idnum, likeit, tstamp, rpnum) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
-                stmt = connect.prepareCall("begin" + " booleanFunc (par_bool => (CASE ? WHEN 1 THEN TRUE ELSE FALSE END)); " + "end;");
+                queryString = "INSERT INTO Reprint (sidnum, idnum, likeit) VALUES (?, ?, ?)";
                 stmt = connect.prepareStatement(queryString);
                 stmt.setString(1, reprintInfo.get("sidnum"));
                 stmt.setString(2, reprintInfo.get("idnum")); //idnum
                 stmt.setInt(3, like_boolean); //likeit
-                stmt.setString(5, reprintInfo.get("rpnum")); //rpnum
 
                 int count = stmt.executeUpdate();
             } catch (SQLException throwables) {
-
                 stmt.close();
                 connect.close();
                 return throwables.getErrorCode();

@@ -444,21 +444,17 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
             Map<String, String> reprintInfo = gson.fromJson(jsonString, mapType);
+
             //check user credentials
             Map<String, String> teamMap = Launcher.dbEngine.validateUser(reprintInfo);
             if(teamMap.isEmpty()){
                 responseString = "{\"status\":-10, "+"\"error\":\"invalid credentials\"}";
             } else {
-                Integer reprint_id = 0;
-                Integer num_reprints = Launcher.dbEngine.getReprintCount();
-                if (num_reprints != -10){
-                    reprint_id = num_reprints + 1;
-                }
-                reprintInfo.put("rpnum", Integer.toString(reprint_id));
                 reprintInfo.put("sidnum", sidnum);
                 reprintInfo.put("idnum", teamMap.get("idnum"));
                 //if the user is blocked, don't let them "reprint"
-                if (Launcher.dbEngine.isBlocked(reprintInfo) == 0){
+                int block_status = Launcher.dbEngine.isBlocked(reprintInfo);
+                if (block_status == 0){
                     responseString = "{\"status\": \"0\",\"error\": \"blocked\"}";
                 } else {
                     Integer status = Launcher.dbEngine.reprint(reprintInfo);
