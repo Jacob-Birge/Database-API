@@ -248,22 +248,40 @@ public class API {
                         +"\"error\":\"invalid credentials\"}\n";
             }
             else {
-                //look up requested person
-                Map<String,String> userMap = Launcher.dbEngine.seeUser(idnum);
-                //either person not in database or person blocked user
-                if (userMap.isEmpty()){
-                    responseString = "{}";
+                // Check if user is blocked by other user
+                Map<String, String> usersInfo = new HashMap<>();
+                usersInfo.put("userId", teamMap.get("idnum"));
+                usersInfo.put("otherUserId", idnum);
+                Integer isBlocked = Launcher.dbEngine.isBlocked(usersInfo);
+                // user is blocked
+                if (isBlocked == 1){
+                    responseString = "{\"status\":\"0\", "
+                            +"\"error\":\"blocked\"}\n";
                 }
-                //person found in database
+                // other user DNE
+                else if (isBlocked == -1){
+                    responseString = "{\"status\":\"-1\", "
+                            +"\"error\":\"User to be followed does not exist\"}\n";
+                }
+
                 else {
-                    //return person's info
-                    responseString = "{\"status\":1, "
-                            + "\"handle\":\"" + userMap.get("handle") + "\", "
-                            + "\"fullname\":\"" + userMap.get("fullname") + "\", "
-                            + "\"location\":\"" + userMap.get("location") + "\", "
-                            + "\"email\":\"" + userMap.get("email") + "\", "
-                            + "\"bdate\":\"" + userMap.get("bdate") + "\", "
-                            + "\"joined\":\"" + userMap.get("joined") + "\"}\n";
+                    //look up requested person
+                    Map<String, String> userMap = Launcher.dbEngine.seeUser(idnum);
+                    //either person not in database or person blocked user
+                    if (userMap.isEmpty()) {
+                        responseString = "{}";
+                    }
+                    //person found in database
+                    else {
+                        //return person's info
+                        responseString = "{\"status\":1, "
+                                + "\"handle\":\"" + userMap.get("handle") + "\", "
+                                + "\"fullname\":\"" + userMap.get("fullname") + "\", "
+                                + "\"location\":\"" + userMap.get("location") + "\", "
+                                + "\"email\":\"" + userMap.get("email") + "\", "
+                                + "\"bdate\":\"" + userMap.get("bdate") + "\", "
+                                + "\"joined\":\"" + userMap.get("joined") + "\"}\n";
+                    }
                 }
             }
         //catch all exceptions that may occur

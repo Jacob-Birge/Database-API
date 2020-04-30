@@ -583,9 +583,10 @@ public class DBEngine {
             Connection conn = ds.getConnection();
             String queryString = null;
 
-            queryString = "SELECT * FROM Story WHERE idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
-            + "AND idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
-            + "AND tstamp >= ? AND tstamp <= ? AND (CURRENT_TIMESTAMP < expires OR expires IS NULL)";
+            queryString = "SELECT 'story' as type, i.handle as handle, s.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp "
+                    + "FROM Story as s join Identity as i on i.idnum = s.idnum WHERE s.idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
+                    + "AND s.idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
+                    + "AND s.tstamp >= ? AND s.tstamp <= ? AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
             stmt.setString(2, idnum);
@@ -603,7 +604,7 @@ public class DBEngine {
                 thisPost.put("sidnum", sidnum);
                 String chapter = rs.getString("chapter");
                 thisPost.put("chapter", chapter);
-                String posted = rs.getString("date");
+                String posted = rs.getString("tstamp");
                 thisPost.put("posted", posted);
                 timeline.add(thisPost);
             }
