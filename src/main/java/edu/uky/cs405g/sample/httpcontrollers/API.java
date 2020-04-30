@@ -2,6 +2,12 @@ package edu.uky.cs405g.sample.httpcontrollers;
 //
 // Sample code used with permission from Dr. Bumgardner
 //
+
+//Authors:  Kyle Hume
+//          Kelsey Cole
+//          Sam Armstrong
+//          Jacob Birge
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import edu.uky.cs405g.sample.Launcher;
@@ -150,16 +156,16 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response createUser(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             //filter out quotes from input
             for (String key : myMap.keySet()) {
@@ -168,37 +174,31 @@ public class API {
                 input = input.replace("\'", "");
                 myMap.put(key, input);
             }
-            String handleVal = myMap.get("handle");
-            String passVal = myMap.get("password");
-            String fullnameVal = myMap.get("fullname");
-            String locationVal = myMap.get("location");
-            String xmailVal = myMap.get("xmail");
-            String bdateVal = myMap.get("bdate");
-
-            int result = Launcher.dbEngine.createUser(handleVal, passVal, fullnameVal, locationVal, xmailVal, bdateVal);
-
+            //create user
+            int result = Launcher.dbEngine.createUser(myMap);
             // check if query seemed to have executed correctly
             if (result == 0){
-                responseString = "{\"status\":-2, "
+                responseString = "{\"status\":\"-2\", "
                         +"\"error\":\"SQL Constraint Exception\"}\n";
             }
             else{
-                // check if query inserted correctly
+                //check if query inserted correctly
                 Map<String, String> userInfo = new HashMap<>();
-                userInfo.put("handle", handleVal);
-                userInfo.put("password", passVal);
+                userInfo.put("handle", myMap.get("handle"));
+                userInfo.put("password", myMap.get("password"));
                 Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
+                //did not insert correctly
                 if (teamMap.isEmpty()){
-                    responseString = "{\"status\":-2, "
+                    responseString = "{\"status\":\"-2\", "
                             +"\"error\":\"SQL Constraint Exception\"}\n";
                 }
+                //inserted correctly
                 else {
-                    //status_code = 0 , API is offline
-                    //status_code = 1 , API is online
-                    responseString = "{\"status\":" + teamMap.get("idnum") + "}";
+                    //status_code = idnum
+                    responseString = "{\"status\":\"" + teamMap.get("idnum") + "\"}\n";
                 }
             }
-
+        //catch all exceptions that may occur
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -206,6 +206,7 @@ public class API {
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // createUser()
@@ -222,16 +223,16 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response seeUser(InputStream inputData, @PathParam("idnum") String idnum) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             //filter out quotes from input
             for (String key : myMap.keySet()) {
@@ -240,34 +241,32 @@ public class API {
                 input = input.replace("\'", "");
                 myMap.put(key, input);
             }
+            //validate user's credentials
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status\":-10, "
-                        +"\"error\":\"invalid credentials\"}";
+                responseString = "{\"status\":\"-10\", "
+                        +"\"error\":\"invalid credentials\"}\n";
             }
             else {
-                //status_code = 0 , API is offline
-                //status_code = 1 , API is online
+                //look up requested person
                 Map<String,String> userMap = Launcher.dbEngine.seeUser(idnum);
+                //either person not in database or person blocked user
                 if (userMap.isEmpty()){
                     responseString = "{}";
                 }
+                //person found in database
                 else {
-                    String handle = userMap.get("handle");
-                    String fullname = userMap.get("fullname");
-                    String location = userMap.get("location");
-                    String email = userMap.get("email");
-                    String bdate = userMap.get("bdate");
-                    String joined = userMap.get("joined");
+                    //return person's info
                     responseString = "{\"status\":1, "
-                            + "\"handle\":\"" + handle + "\", "
-                            + "\"fullname\":\"" + fullname + "\", "
-                            + "\"location\":\"" + location + "\", "
-                            + "\"email\":\"" + email + "\", "
-                            + "\"bdate\":\"" + bdate + "\", "
-                            + "\"joined\":\"" + joined + "\"}";
+                            + "\"handle\":\"" + userMap.get("handle") + "\", "
+                            + "\"fullname\":\"" + userMap.get("fullname") + "\", "
+                            + "\"location\":\"" + userMap.get("location") + "\", "
+                            + "\"email\":\"" + userMap.get("email") + "\", "
+                            + "\"bdate\":\"" + userMap.get("bdate") + "\", "
+                            + "\"joined\":\"" + userMap.get("joined") + "\"}\n";
                 }
             }
+        //catch all exceptions that may occur
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -275,6 +274,7 @@ public class API {
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // seeUser()
@@ -292,10 +292,10 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response suggestions(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
-            //get info passed in json
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -314,8 +314,9 @@ public class API {
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
             if (teamMap.isEmpty()){
                 responseString = "{\"status\":\"-10\", "
-                        +"\"error\":\"invalid credentials\"}";
+                        +"\"error\":\"invalid credentials\"}\n";
             }
+            //user was validated
             else {
                 //get follow suggestions
                 Map<String, String> suggestions = Launcher.dbEngine.getSuggestions(userInfo);
@@ -325,7 +326,7 @@ public class API {
                 responseString = "{\"status\":\"" + Integer.toString(sugLen) + "\", \"";
                 //if no suggestions were found
                 if (sugLen == 0){
-                    responseString = responseString + "error\":\"no suggestions\"}";
+                    responseString = responseString + "error\":\"no suggestions\"}\n";
                 }
                 //if suggestions were found
                 else {
@@ -341,9 +342,10 @@ public class API {
                     handles = handles.substring(0, handles.length() - 1);
                     //add lists to json response
                     responseString = responseString + "idnums\":\"" + idnums + "\",";
-                    responseString = responseString + "\"handles\":\"" + handles + "\"}";
+                    responseString = responseString + "\"handles\":\"" + handles + "\"}\n";
                 }
             }
+        //catch all exceptions that may occur
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -351,6 +353,7 @@ public class API {
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // suggestions()
@@ -369,20 +372,18 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response postStory(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
-            //get info passed in json
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> storyInfo = gson.fromJson(jsonString, mapType);
             //filter out quotes from input
-
             for (String key : storyInfo.keySet()) {
                 String input = storyInfo.get(key);
                 input = input.replace("\"", "");
@@ -390,26 +391,33 @@ public class API {
                 storyInfo.put(key, input);
             }
 
+            //check timestamp format
+
             //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(storyInfo);
             if(teamMap.isEmpty()){
-                responseString = "{\"status\":-10, "+"\"error\":\"invalid credentials\"}";
-            } else{
-
+                responseString = "{\"status\":\"-10\", "+"\"error\":\"invalid credentials\"}\n";
+            }
+            //user validated
+            else{
+                //create the story for the user
                 storyInfo.put("idnum", teamMap.get("idnum"));
                 Integer story = Launcher.dbEngine.createStory(storyInfo);
+                //story created successfully
                 if (story == 1) {
-                    responseString = "{\"status\": \"1\"}";
-                } else{
-                    responseString = "{\"status\": \"0\"}";
+                    responseString = "{\"status\": \"1\"}\n";
+                }
+                //SQL constraint exception
+                else if (story == -2){
+                    responseString = "{\"status\":\"-2\", "
+                            +"\"error\":\"SQL Constraint Exception\"}\n";
+                }
+                //some other exeption
+                else{
+                    responseString = "{\"status\": \"0\",\"error\":\"invalid story info\"}\n";
                 }
             }
-
-            //Here is where you would put your system test,
-            //but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
+        //catch any exceptions that may occur
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -417,6 +425,7 @@ public class API {
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // postStory()
@@ -434,9 +443,10 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response reprint(@PathParam("sidnum") String sidnum, InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+        String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -444,26 +454,27 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
             Map<String, String> reprintInfo = gson.fromJson(jsonString, mapType);
-
             //check user credentials
             Map<String, String> teamMap = Launcher.dbEngine.validateUser(reprintInfo);
             if(teamMap.isEmpty()){
-                responseString = "{\"status\":-10, "+"\"error\":\"invalid credentials\"}";
-            } else {
+                responseString = "{\"status\":\"-10\", "+"\"error\":\"invalid credentials\"}\n";
+            }
+            //user validated
+            else {
                 reprintInfo.put("sidnum", sidnum);
                 reprintInfo.put("idnum", teamMap.get("idnum"));
                 //if the user is blocked, don't let them "reprint"
-                int block_status = Launcher.dbEngine.isBlocked(reprintInfo);
+                int block_status = Launcher.dbEngine.isBlockedReprint(reprintInfo);
                 if (block_status == 0){
-                    responseString = "{\"status\": \"0\",\"error\": \"blocked\"}";
+                    responseString = "{\"status\":\"0\",\"error\":\"blocked\"}\n";
                 } else {
                     Integer status = Launcher.dbEngine.reprint(reprintInfo);
-                    if (status == 1) { //everything was A-OK
-                        responseString = "{\"status\": \"1\"}";
-                    } else if (status == 1452) { //the story number didn't exist
-                        responseString = "{\"status\": \"0\",\"error\": \"story not found\"}";
+                    if (status == 1) { //reprint successful
+                        responseString = "{\"status\":\"1\"}\n";
+                    } else if (status == -2) { //the story number didn't exist
+                        responseString = "{\"status\":\"0\",\"error\":\"story not found\"}\n";
                     } else { //some other tomfoolery
-                        responseString = "{\"status\": 0\"} ";
+                        responseString = "{\"status\":\"0\"}\n";
                     }
                 }
             }
@@ -492,16 +503,16 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response follow(@PathParam("idnum") String idnum, InputStream inputData) {
-        String responseString = "{\"status_code\":0}\n";
+        String responseString = "{\"status_code\":\"0\"}\n";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
                 crunchifyBuilder.append(line);
             }
             String jsonString = crunchifyBuilder.toString();
-
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
             //filter out quotes from input
             for (String key : myMap.keySet()) {
@@ -510,43 +521,44 @@ public class API {
                 input = input.replace("\'", "");
                 myMap.put(key, input);
             }
-            String handle = myMap.get("handle");
-
-            // Validating User
+            // Validate User
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status\":-1, "
+                responseString = "{\"status\":\"-10\","
                         +"\"error\":\"invalid credentials\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
-
-            // Following the user
-            int ResponseStatus = Launcher.dbEngine.followUser(handle, idnum);
-            if (ResponseStatus == 1){
-                responseString = "{\"status\":1}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
-            }
-            else if (ResponseStatus == 0){
-                responseString = "{\"status\":0, "
+            // Check if user is blocked by other user
+            Map<String, String> usersInfo = new HashMap<>();
+            usersInfo.put("userId", teamMap.get("idnum"));
+            usersInfo.put("otherUserId", idnum);
+            Integer isBlocked = Launcher.dbEngine.isBlocked(usersInfo);
+            // user is blocked
+            if (isBlocked == 1){
+                responseString = "{\"status\":\"0\", "
                         +"\"error\":\"blocked\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
             }
-            else if (ResponseStatus == -1){
-                responseString = "{\"status\":-1, "
+            // other user DNE
+            else if (isBlocked == -1){
+                responseString = "{\"status\":\"-1\", "
                         +"\"error\":\"User to be followed does not exist\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
             }
-            else if (ResponseStatus == -2){
-                responseString = "{\"status\":-2, "
-                        +"\"error\":\"SQL Constraint Exception\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
+            // user is not blocked and other user exists
+            else{
+                // Follow the other user
+                int ResponseStatus = Launcher.dbEngine.followUser(teamMap.get("idnum"), idnum);
+                //follow successful
+                if (ResponseStatus == 1){
+                    responseString = "{\"status\":\"1\"}\n";
+                }
+                //SQL constraint exception occurred
+                else if (ResponseStatus == -2){
+                    responseString = "{\"status\":\"-2\", "
+                            +"\"error\":\"SQL Constraint Exception\"}\n";
+                }
             }
-
+        //catch any exceptions that may occur
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
@@ -554,6 +566,7 @@ public class API {
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // follow()
@@ -571,9 +584,10 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response unfollow(@PathParam("idnum") String idnum, InputStream inputData) {
-        String responseString = "{\"status\":0}\n";
+        String responseString = "{\"status\":\"0\"}\n";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -588,50 +602,53 @@ public class API {
                 input = input.replace("\'", "");
                 myMap.put(key, input);
             }
-            String handle = myMap.get("handle");
-
-            // Validating User
+            // Validate User
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
-                responseString = "{\"status\":-1, "
+                responseString = "{\"status\":\"-10\", "
                         +"\"error\":\"invalid credentials\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
-
-            // Unfollowing the user
-            int ResponseStatus = Launcher.dbEngine.unfollowUser(handle, idnum);
-            if (ResponseStatus == 1){
-                responseString = "{\"status\":1}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
-            }
-            else if (ResponseStatus == 0){
-                responseString = "{\"status\":0, "
-                        +"\"error\":\"not currently followed\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
-            }
-            else if (ResponseStatus == -1){
-                responseString = "{\"status\":-1, "
+            // use isBlocked() to check if person to unfollow exists
+            Map<String, String> usersInfo = new HashMap<>();
+            usersInfo.put("userId", teamMap.get("idnum"));
+            usersInfo.put("otherUserId", idnum);
+            Integer isBlocked = Launcher.dbEngine.isBlocked(usersInfo);
+            // person to unfollow DNE
+            if (isBlocked == -1){
+                responseString = "{\"status\":\"-1\", "
                         +"\"error\":\"User to be unfollowed does not exist\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
             }
-            else if (ResponseStatus == -2){
-                responseString = "{\"status\":-2, "
-                        +"\"error\":\"SQL Constraint Exception\"}\n";
-                return Response.ok(responseString)
-                        .header("Access-Control-Allow-Origin", "*").build();
+            // person to unfollow exists
+            else {
+                // Unfollow the user
+                int ResponseStatus = Launcher.dbEngine.unfollowUser(teamMap.get("idnum"), idnum);
+                // unfollow successful
+                if (ResponseStatus == 1) {
+                    responseString = "{\"status\":\"1\"}\n";
+                }
+                // user already doesn't follow other user
+                else if (ResponseStatus == 0) {
+                    responseString = "{\"status\":\"0\", "
+                            + "\"error\":\"not currently followed\"}\n";
+                }
+                // SQL constraint exception occurred
+                else if (ResponseStatus == -2) {
+                    responseString = "{\"status\":\"-2\", "
+                            + "\"error\":\"SQL Constraint Exception\"}\n";
+                }
             }
-
-        } catch (Exception ex) {
+        }
+        // catch any exceptions that may occur
+        catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // unfollow()
@@ -652,7 +669,7 @@ public class API {
         String responseString;
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
-            //get info passed in json
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -667,30 +684,47 @@ public class API {
                 input = input.replace("\'", "");
                 userInfo.put(key, input);
             }
-
             //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
             if (teamMap.isEmpty()){
                 responseString = "{\"status\":\"-10\", "
-                        +"\"error\":\"invalid credentials\"}";
+                        +"\"error\":\"invalid credentials\"}\n";
             }
+            //user validated
             else{
-                userInfo.put("idnum", teamMap.get("idnum"));
-                userInfo.put("blockIdnum", idnum);
-                Integer blocked = Launcher.dbEngine.blockUser(userInfo);
-                responseString = "{\"status\":\"" + blocked.toString() + "\"";
-                if (blocked == 0){
-                    responseString += ",\"error\":\"DNE\"";
+                // Check if other user is already blocked by user
+                Map<String, String> usersInfo = new HashMap<>();
+                usersInfo.put("userId", idnum);
+                usersInfo.put("otherUserId", teamMap.get("idnum"));
+                Integer isBlocked = Launcher.dbEngine.isBlocked(usersInfo);
+                // other user is already blocked
+                if (isBlocked == 1){
+                    responseString = "{\"status\":\"1\"}\n";
                 }
-                responseString += "}";
+                else {
+                    //block user
+                    userInfo.put("idnum", teamMap.get("idnum"));
+                    userInfo.put("blockIdnum", idnum);
+                    Integer blocked = Launcher.dbEngine.blockUser(userInfo);
+                    //build response string
+                    responseString = "{\"status\":\"" + blocked.toString() + "\"";
+                    //there was a SQL constraint exception because other user DNE
+                    if (blocked == 0){
+                        responseString += ",\"error\":\"DNE\"";
+                    }
+                    responseString += "}\n";
+                }
             }
-        } catch (Exception ex) {
+        }
+        //catch any other exceptions that occur
+        catch (Exception ex) {
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
             return Response.status(500).entity(exceptionAsString).build();
         }
+        //return json response to user
         return Response.ok(responseString)
                 .header("Access-Control-Allow-Origin", "*").build();
     } // block()
@@ -706,9 +740,10 @@ public class API {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response timeline(InputStream inputData) {
-        String responseString = "{\"status_code\":0}";
+        String responseString = "{\"status_code\":\"0\"}";
         StringBuilder crunchifyBuilder = new StringBuilder();
         try {
+            //convert incoming json to a map
             BufferedReader in = new BufferedReader(new InputStreamReader(inputData));
             String line = null;
             while ((line=in.readLine()) != null) {
@@ -727,7 +762,7 @@ public class API {
             Map<String,String> validation = Launcher.dbEngine.validateUser(userInfo);
             if (validation.isEmpty()){
                 responseString = "{\"status\":\"-10\", "
-                        +"\"error\":\"invalid credentials\"}";
+                        +"\"error\":\"invalid credentials\"}\n";
             }
             else {
                 String idnum = validation.get("idnum");
@@ -744,7 +779,7 @@ public class API {
                     responseString += ",\"chapter\":\"" + currStory.get("chapter") + "\"";
                     responseString += ",\"posted\":\"" + currStory.get("posted") + "\"}\"";
                 }
-                responseString += "\"status\":\"" + stories.size() + "\"}";
+                responseString += "\"status\":\"" + stories.size() + "\"}\n";
             }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();

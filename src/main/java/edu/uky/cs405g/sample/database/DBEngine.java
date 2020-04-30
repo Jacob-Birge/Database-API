@@ -2,6 +2,11 @@ package edu.uky.cs405g.sample.database;
 
 // Used with permission from Dr. Bumgardner
 
+//Authors:  Kyle Hume
+//          Kelsey Cole
+//          Sam Armstrong
+//          Jacob Birge
+
 import org.apache.commons.dbcp2.*;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -150,10 +155,11 @@ public class DBEngine {
 
     public Integer createStory(Map<String,String> storyInfo) {
         PreparedStatement stmt = null;
-
         try {
+            //connect to the database
             Connection connect = ds.getConnection();
             try {
+                //build the prepared statement
                 String queryString = null;
                 queryString = "INSERT INTO Story (idnum, chapter, url, expires) VALUES (?, ?, ?, ?)";
                 stmt = connect.prepareStatement(queryString);
@@ -161,27 +167,78 @@ public class DBEngine {
                 stmt.setString(2, storyInfo.get("chapter")); //chapter
                 stmt.setString(3, storyInfo.get("url")); //url
                 stmt.setString(4, storyInfo.get("expires")); //expires
-
+                //execute the prepared statement
                 int count = stmt.executeUpdate();
-            } catch (SQLException throwables) {
+            }
+            //catch SQL exceptions
+            catch (SQLIntegrityConstraintViolationException throwables) {
+                //close everything and return error code
                 stmt.close();
                 connect.close();
-                return 0;
-            } catch (Exception throwables) {
+                return -2;
+            }
+            //catch all other exceptions
+            catch (Exception throwables) {
                 throwables.printStackTrace();
-            } finally {
+                return 0;
+            }
+            finally {
+                //close everything
                 stmt.close();
                 connect.close();
             }
-        } catch (Exception throwables){
+        }
+        //catch any exceptions that may occur
+        catch (Exception throwables){
             throwables.printStackTrace();
         }
+        //return that story was posted
         return 1;
     } //createStory
 
-    public Integer isBlocked(Map<String,String> reprintInfo) throws SQLException {
+    public Integer isBlocked(Map<String,String> usersInfo){
+        Integer status = 0;
+        PreparedStatement stmt;
+        try
+        {
+            //connect to database
+            Connection conn = ds.getConnection();
+            String queryString = null;
+            //build the prepared statement
+            queryString = "select if (? in (select b.blocked from Block as b where b.idnum = ?),1,0) as blocked, if (? in (select i.idnum from Identity as i),1,0) as userExists";
+            stmt = conn.prepareStatement(queryString);
+            stmt.setString(1,usersInfo.get("userId"));
+            stmt.setString(2,usersInfo.get("otherUserId"));
+            stmt.setString(3,usersInfo.get("otherUserId"));
+            //execute the prepared statement
+            ResultSet rs = stmt.executeQuery();
+            //get the returned status
+            while (rs.next()) {
+                if (rs.getInt("userExists") == 0){
+                    status = -1;
+                }
+                else{
+                    status = rs.getInt("blocked");
+                }
+            }
+            //close everything
+            rs.close();
+            stmt.close();
+            conn.close();
+        }
+        //catch exceptions
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        //return 1 if user is blocked by other user and 0 if not
+        return status;
+    }
+
+    public Integer isBlockedReprint(Map<String,String> reprintInfo) throws SQLException {
         Connection connect = ds.getConnection();
         try {
+            PreparedStatement stmt = null;
             Statement blocked_stmt = connect.createStatement();
             Statement select_stmt = connect.createStatement();
             String query = "SELECT idnum FROM Story WHERE sidnum = " + reprintInfo.get("sidnum") + ";";
@@ -230,10 +287,10 @@ public class DBEngine {
                 stmt.setInt(3, like_boolean); //likeit
 
                 int count = stmt.executeUpdate();
-            } catch (SQLException throwables) {
+            } catch (SQLIntegrityConstraintViolationException throwables) {
                 stmt.close();
                 connect.close();
-                return throwables.getErrorCode();
+                return -2;
             } catch (Exception throwables) {
                 throwables.printStackTrace();
                 return 0;
@@ -250,65 +307,78 @@ public class DBEngine {
 
     public Map<String,String> validateUser(Map<String, String> userInfo) {
         Map<String,String> userIdMap = new HashMap<>();
-        PreparedStatement stmt = null;
+        PreparedStatement stmt;
         try
         {
+            //connect to database
             Connection conn = ds.getConnection();
             String queryString = null;
-
+            //build the prepared statement
             queryString = "SELECT idnum FROM Identity WHERE handle = ? and pass = ?";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1,userInfo.get("handle"));
             stmt.setString(2,userInfo.get("password"));
-
+            //execute the prepared statement
             ResultSet rs = stmt.executeQuery();
+            //get the returned idnum
             while (rs.next()) {
                 String idnum = rs.getString("idnum");
                 userIdMap.put("idnum", idnum);
             }
+            //close everything
             rs.close();
             stmt.close();
             conn.close();
         }
+        //catch exceptions
         catch(Exception ex)
         {
             ex.printStackTrace();
         }
+        //return the map containing the found idnum (or empty if user not found)
         return userIdMap;
     } // validateUser()
 
-    public int createUser(String handle, String pass, String fullname, String location, String email, String bdate) {
-        PreparedStatement stmt = null;
+    public int createUser(Map<String, String> myMap) {
         try {
-            Connection conn = ds.getConnection();
+            //initialize the query and prepared statement
             String queryString = null;
+            PreparedStatement stmt = null;
+            //connect to database
+            Connection conn = ds.getConnection();
             try {
+                //build the prepared statement
                 queryString = "INSERT INTO Identity (handle, pass, fullname, location, email, bdate) VALUES (?, ?, ?, ?, ?, ?)";
                 stmt = conn.prepareStatement(queryString);
-                stmt.setString(1, handle);
-                stmt.setString(2, pass);
-                stmt.setString(3, fullname);
-                stmt.setString(4, location);
-                stmt.setString(5, email);
-                stmt.setString(6, bdate);
-
+                stmt.setString(1, myMap.get("handle"));
+                stmt.setString(2, myMap.get("password"));
+                stmt.setString(3, myMap.get("fullname"));
+                stmt.setString(4, myMap.get("location"));
+                stmt.setString(5, myMap.get("xmail"));
+                stmt.setString(6, myMap.get("bdate"));
+                //execute the statement
                 int count = stmt.executeUpdate();
             }
-            catch(SQLException ex){
+            //catch any exceptions from the database
+            catch(SQLIntegrityConstraintViolationException ex){
                 stmt.close();
                 conn.close();
                 return 0;
             }
+            //catch all other exceptions
             catch(Exception ex){
                 ex.printStackTrace();
             }
             finally{
+                //make sure to close everything
                 stmt.close();
                 conn.close();
             }
+        //catch unexpected exceptions that may occur
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        //created user successfully
         return 1;
     }// createUser()
 
@@ -317,36 +387,34 @@ public class DBEngine {
         PreparedStatement stmt = null;
         try
         {
+            //connect to database
             Connection conn = ds.getConnection();
+            //build prepared statement
             String queryString = null;
-
             queryString = "SELECT * FROM Identity WHERE idnum = ?";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
-
+            //put all of the found info in a map
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                String handle = rs.getString("handle");
-                userIdMap.put("handle", handle);
-                String fullname = rs.getString("fullname");
-                userIdMap.put("fullname", fullname);
-                String location = rs.getString("location");
-                userIdMap.put("location", location);
-                String email = rs.getString("email");
-                userIdMap.put("email", email);
-                String bdate = rs.getString("bdate");
-                userIdMap.put("bdate", bdate);
-                String joined = rs.getString("joined");
-                userIdMap.put("joined", joined);
+                userIdMap.put("handle", rs.getString("handle"));
+                userIdMap.put("fullname", rs.getString("fullname"));
+                userIdMap.put("location", rs.getString("location"));
+                userIdMap.put("email", rs.getString("email"));
+                userIdMap.put("bdate", rs.getString("bdate"));
+                userIdMap.put("joined", rs.getString("joined"));
             }
+            //close everything
             rs.close();
             stmt.close();
             conn.close();
         }
+        //catch any exceptions that may occur
         catch(Exception ex)
         {
             ex.printStackTrace();
         }
+        //return the map with the person's
         return userIdMap;
     } // seeUser()
 
@@ -355,30 +423,39 @@ public class DBEngine {
         PreparedStatement stmt = null;
         try
         {
+            //connect to database
             Connection conn = ds.getConnection();
+            //build prepared statement
             String queryString = null;
-
-            queryString = "select distinct ff.followed, s.handle from Identity as u join Follows as uf on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower join Identity as s on s.idnum = ff.followed where u.handle = ? and u.pass = ? and  ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
+            queryString = "select distinct ff.followed, s.handle from Identity as u join Follows as uf " +
+                    "on u.idnum = uf.follower join Follows as ff on uf.followed = ff.follower join Identity as s " +
+                    "on s.idnum = ff.followed where u.handle = ? and u.pass = ? and  " +
+                    "ff.followed != u.idnum and ff.followed not in (select uf.followed from Identity as u " +
+                    "join Follows as uf on u.idnum = uf.follower where u.handle = ? and u.pass = ?) limit 4";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, userInfo.get("handle"));
             stmt.setString(2, userInfo.get("password"));
             stmt.setString(3, userInfo.get("handle"));
             stmt.setString(4, userInfo.get("password"));
-
+            //execute prepared statement
             ResultSet rs = stmt.executeQuery();
+            //put returned suggestions into a map
             while (rs.next()) {
                 String idnum = rs.getString("ff.followed");
                 String handle = rs.getString("s.handle");
                 result.put(idnum, handle);
             }
+            //close everything
             rs.close();
             stmt.close();
             conn.close();
         }
+        //catch all exceptions that may occur
         catch(Exception ex)
         {
             ex.printStackTrace();
         }
+        //return map of suggested users
         return result;
     } // getSuggestions()
 
@@ -386,30 +463,35 @@ public class DBEngine {
         PreparedStatement stmt = null;
         try
         {
+            //connect to database
             Connection conn = ds.getConnection();
             String queryString = null;
             try {
+                //build prepared statement
                 queryString = "insert into Block (idnum, blocked) values (?,?)";
                 stmt = conn.prepareStatement(queryString);
                 stmt.setString(1, userInfo.get("idnum"));
                 stmt.setString(2, userInfo.get("blockIdnum"));
-
+                //execute prepared statement
                 int count = stmt.executeUpdate();
             }
-            catch(SQLException ex){
+            catch(SQLIntegrityConstraintViolationException ex){
                 stmt.close();
                 conn.close();
                 return 0;
             }
+            //catch all other exceptions
             catch(Exception ex)
             {
                 ex.printStackTrace();
             }
             finally {
+                //close everything
                 stmt.close();
                 conn.close();
             }
         }
+        //catch any other exceptions that may occur
         catch(Exception ex)
         {
             ex.printStackTrace();
@@ -420,43 +502,29 @@ public class DBEngine {
     public int followUser(String userRequestingFollow, String userToBeFollowed) {
         int StatusCode = 1;
         try {
+            PreparedStatement stmt = null;
             Connection connection = ds.getConnection();
-            Statement selectStmt = connection.createStatement();
-            Statement blockedStmt = connection.createStatement();
-            Statement insertStmt = connection.createStatement();
             try {
-                String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingFollow + "\";";
-                ResultSet result = selectStmt.executeQuery(Query);
-
-                if (result.next()) {
-                    String idnum = result.getString("idnum");
-                    Query = "SELECT blocked FROM Block WHERE idnum =" + userToBeFollowed + ";";
-                    ResultSet resultBlock = blockedStmt.executeQuery(Query);
-                    if (resultBlock.next()) {
-                        StatusCode = 0;
-                    } else {
-                        Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
-                        int updateStatus = insertStmt.executeUpdate(Query);
-                        StatusCode = 1;
-                    }
-                } else {
-                    StatusCode = -1;
-                }
-
-                result.close();
-                selectStmt.close();
-                blockedStmt.close();
-                insertStmt.close();
+                //build prepared statement
+                String Query = "INSERT INTO Follows (follower, followed) VALUES (?,?);";
+                stmt = connection.prepareStatement(Query);
+                stmt.setString(1, userRequestingFollow);
+                stmt.setString(2, userToBeFollowed);
+                //execute prepared statement
+                int updateStatus = stmt.executeUpdate();
+                //close everything
+                stmt.close();
                 connection.close();
             }
-            catch(SQLException ex){
-                selectStmt.close();
-                blockedStmt.close();
-                insertStmt.close();
+            //catch SQL constraint exceptions
+            catch(SQLIntegrityConstraintViolationException ex){
+                //close everything
+                stmt.close();
                 connection.close();
                 return -2;
             }
         }
+        //catch all other exceptions
         catch(Exception ex) {
             StatusCode = -1;
             ex.printStackTrace();
@@ -465,49 +533,44 @@ public class DBEngine {
     } // followUser()
 
     public int unfollowUser(String userRequestingUnfollow, String userToBeUnfollowed) {
-        int StatusCode = 1;
+        int StatusCode;
         try {
+            //connect to database
             Connection connection = ds.getConnection();
-            Statement selectStmt = connection.createStatement();
-            Statement followingStmt = connection.createStatement();
-            Statement deleteStmt = connection.createStatement();
+            PreparedStatement stmt = null;
             try {
-                String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingUnfollow + "\";";
-                ResultSet result = selectStmt.executeQuery(Query);
-
-                if (result.next()) {
-                    String idnum = result.getString("idnum");
-                    Query = "SELECT followed FROM Follows WHERE follower =" + idnum + " AND followed =" + userToBeUnfollowed + ";";
-                    ResultSet resultFollow = followingStmt.executeQuery(Query);
-                    if (!resultFollow.next()) {
-                        StatusCode = 0;
-                    } else {
-                        Query = "DELETE FROM Follows WHERE follower =" + idnum + " AND followed =" + userToBeUnfollowed + ";";
-                        int deleteStatus = deleteStmt.executeUpdate(Query);
-                        StatusCode = 1;
-                    }
-                } else {
-                    StatusCode = -1;
+                //build prepared statement
+                String Query = "DELETE FROM Follows WHERE follower =? AND followed =?;";
+                stmt = connection.prepareStatement(Query);
+                stmt.setString(1, userRequestingUnfollow);
+                stmt.setString(2, userToBeUnfollowed);
+                //execute prepared statement
+                int deleteStatus = stmt.executeUpdate();
+                //nothing was deleted (didn't already follow)
+                if (deleteStatus == 0){
+                    StatusCode = 0;
                 }
-
-                result.close();
-                selectStmt.close();
-                followingStmt.close();
-                deleteStmt.close();
+                //lines were deleted (success)
+                else{
+                    StatusCode = 1;
+                }
+                // close everything
+                stmt.close();
                 connection.close();
             }
-            catch(SQLException ex){
-                selectStmt.close();
-                followingStmt.close();
-                deleteStmt.close();
+            // catch SQL constraint exceptions
+            catch(SQLIntegrityConstraintViolationException ex){
+                stmt.close();
                 connection.close();
                 return -2;
             }
         }
+        // catch any other exceptions that may occur
         catch(Exception ex) {
             StatusCode = -1;
             ex.printStackTrace();
         }
+        // return statuscode (1=success, 0=person not followed, -2=SQL constraint exception)
         return StatusCode;
     } // unfollowUser()
 
