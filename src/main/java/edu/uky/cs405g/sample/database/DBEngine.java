@@ -9,15 +9,12 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Calendar;
 
 
 public class DBEngine {
@@ -150,6 +147,164 @@ public class DBEngine {
         }
         return userIdMap;
     } // getBDATE()
+
+
+    public Integer getStoryCount() {
+        PreparedStatement stmt = null;
+        try {
+            Connection connect = ds.getConnection();
+            try {
+                String queryString = null;
+                queryString = "SELECT COUNT(*) as num_stories FROM Story";
+                ResultSet rs = stmt.executeQuery();
+                Integer num_stories = rs.getInt("num_stories");
+                return num_stories;
+            } catch (SQLException throwables) {
+                stmt.close();
+                connect.close();
+                return -10;
+            } catch (Exception throwables) {
+                throwables.printStackTrace();
+            } finally {
+                stmt.close();
+                connect.close();
+            }
+        } catch (Exception throwables){
+            throwables.printStackTrace();
+        }
+        return 1;
+    } //getStoryCount
+
+    public Integer createStory(Map<String,String> storyInfo) {
+        PreparedStatement stmt = null;
+        //create timestamp
+        Calendar calendar = Calendar.getInstance();
+        java.sql.Timestamp timestampObject = new java.sql.Timestamp(calendar.getTime().getTime());
+        try {
+            Connection connect = ds.getConnection();
+            try {
+                String queryString = null;
+                queryString = "INSERT INTO Story (sidnum, idnum, chapter, url, expires, tstamp) VALUES (?, ?, ?, ?, ?, ?)";
+                stmt = connect.prepareStatement(queryString);
+                stmt.setString(1, storyInfo.get("sidnum"));
+                stmt.setString(2, storyInfo.get("idnum")); //idnum
+                stmt.setString(3, storyInfo.get("chapter")); //chapter
+                stmt.setString(4, storyInfo.get("url")); //url
+                stmt.setString(5, storyInfo.get("expires")); //expires
+                stmt.setTimestamp(6, timestampObject); //tstamp
+
+                int count = stmt.executeUpdate();
+            } catch (SQLException throwables) {
+                stmt.close();
+                connect.close();
+                return 0;
+            } catch (Exception throwables) {
+                throwables.printStackTrace();
+            } finally {
+                stmt.close();
+                connect.close();
+            }
+        } catch (Exception throwables){
+            throwables.printStackTrace();
+        }
+        return 1;
+    } //createStory
+
+    public Integer getReprintCount() {
+        PreparedStatement stmt = null;
+        Integer num_reprints = 1;
+        try {
+            Connection connect = ds.getConnection();
+            try {
+                String queryString = null;
+                queryString = "SELECT COUNT(*) as num_reprints FROM Reprint";
+                stmt = connect.prepareStatement(queryString);
+                ResultSet rs = stmt.executeQuery();
+                num_reprints = rs.getInt("num_reprints");
+            } catch (SQLException throwables) {
+                stmt.close();
+                connect.close();
+                return -10;
+            } catch (Exception throwables) {
+                throwables.printStackTrace();
+            } finally {
+                stmt.close();
+                connect.close();
+            }
+        } catch (Exception throwables){
+            throwables.printStackTrace();
+        }
+        return num_reprints;
+    } //getReprintCount
+
+    public Integer isBlocked(Map<String,String> reprintInfo) throws SQLException {
+        Connection connect = ds.getConnection();
+        try {
+            Statement blocked_stmt = connect.createStatement();
+            Statement select_stmt = connect.createStatement();
+            String query = "SELECT idnum FROM Story WHERE sidnum = " + reprintInfo.get("sidnum") + ";";
+            ResultSet select_result = select_stmt.executeQuery(query);
+            String poster_id = select_result.getString("idnum");
+
+            String blockQuery = "SELECT idnum, blocked from Block WHERE blocked =" + reprintInfo.get("idnum") + " AND idnum = " + poster_id + ";";
+            ResultSet block_result = blocked_stmt.executeQuery(blockQuery);
+            if (!block_result.isBeforeFirst()) {
+                return 0;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return -1;
+        } catch (Exception throwables) {
+            throwables.printStackTrace();
+            return -1;
+        } finally {
+            connect.close();
+        }
+        return 1;
+    }
+
+    public Integer reprint(Map<String,String> reprintInfo) {
+        PreparedStatement stmt = null;
+        String returnString = null;
+        //create timestamp
+        Calendar calendar = Calendar.getInstance();
+        java.sql.Timestamp timestampObject = new java.sql.Timestamp(calendar.getTime().getTime());
+        try {
+            Connection connect = ds.getConnection();
+            try {
+                Integer like_boolean = 0;
+                if (reprintInfo.get("likeit") == "true"){
+                    like_boolean = 1;
+                }
+                String queryString = null;
+                queryString = "INSERT INTO Reprint (sidnum, idnum, likeit, tstamp, rpnum) VALUES (?, ?, ?, ?, ?)";
+                stmt = connect.prepareCall("begin" + " booleanFunc (par_bool => (CASE ? WHEN 1 THEN TRUE ELSE FALSE END)); " + "end;");
+                stmt = connect.prepareStatement(queryString);
+                stmt.setString(1, reprintInfo.get("sidnum"));
+                stmt.setString(2, reprintInfo.get("idnum")); //idnum
+                stmt.setInt(3, like_boolean); //likeit
+                stmt.setTimestamp(4, timestampObject); //tstamp
+                stmt.setString(5, reprintInfo.get("rpnum")); //rpnum
+
+                int count = stmt.executeUpdate();
+            } catch (SQLException throwables) {
+
+                stmt.close();
+                connect.close();
+                return throwables.getErrorCode();
+            } catch (Exception throwables) {
+                throwables.printStackTrace();
+                return 0;
+            } finally {
+                stmt.close();
+                connect.close();
+            }
+        } catch (Exception throwables){
+            throwables.printStackTrace();
+            return 0;
+        }
+        return 1;
+    } //reprint
 
     public Map<String,String> validateUser(String handleVal, String passVal) {
         Map<String,String> userIdMap = new HashMap<>();

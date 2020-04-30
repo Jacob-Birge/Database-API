@@ -58,7 +58,10 @@ CREATE TABLE Block
 	CONSTRAINT fk_blocked FOREIGN KEY(blocked) REFERENCES Identity(idnum)
         ) COMMENT="The Block Table";
 
-GRANT ALL ON SMPDB.* TO 'paul'@'localhost' IDENTIFIED BY 'jellydonuts!'; 
-GRANT ALL on SMPDB.* TO 'paul'@'belgarath.cs.uky.edu' IDENTIFIED BY 'jellydonuts!'; 
-GRANT ALL on SMPDB.* TO 'paul'@'paul.cs.uky.edu' IDENTIFIED BY 'jellydonuts!'; 
+GRANT ALL ON SMPDB.* TO 'krco253'@'localhost' IDENTIFIED BY 'veronica';
+GRANT ALL ON SMPDB.* TO 'krco253'@'%' IDENTIFIED BY 'veronica';
+
+GRANT ALL ON SMPDB.* TO 'paul'@'localhost' IDENTIFIED BY 'jellydonuts!';
+GRANT ALL on SMPDB.* TO 'paul'@'belgarath.cs.uky.edu' IDENTIFIED BY 'jellydonuts!';
+GRANT ALL on SMPDB.* TO 'paul'@'paul.cs.uky.edu' IDENTIFIED BY 'jellydonuts!';
 FLUSH privileges;

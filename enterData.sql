@@ -21,6 +21,9 @@ insert into Story(idnum, chapter, url, expires, tstamp)
 values
 	(1, "First Post", "sup.org", "2010-01-01 01:01:0", "2010-01-01 00:01:00");
 
+insert into Block(blknum, idnum, blocked)
+values
+    (1,1,3);
 insert into Follows(follower, followed, tstamp)
 values
 	(1, 2, "2010-01-01 00:00:01"),
