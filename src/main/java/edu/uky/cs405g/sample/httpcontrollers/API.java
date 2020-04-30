@@ -744,7 +744,7 @@ public class API {
                     responseString += ",\"chapter\":\"" + currStory.get("chapter") + "\"";
                     responseString += ",\"posted\":\"" + currStory.get("posted") + "\"}\"";
                 }
-                responseString += "\"status\":\"" + stories.size() + "\"}";
+                responseString += "\"status\":\"" + stories.size() + "\"}\n";
             }
         } catch (Exception ex) {
             StringWriter sw = new StringWriter();
