@@ -175,7 +175,7 @@ public class DBEngine {
                 //close everything and return error code
                 stmt.close();
                 connect.close();
-                return -2;
+                return throwables.getErrorCode();
             }
             //catch all other exceptions
             catch (Exception throwables) {

@@ -22,8 +22,8 @@ public class Launcher {
         gson = new Gson();
 
         //Database Client initialization
-        String DBuser = "jtbi225";
-        String DBpassword = "Ktm200exc";
+        String DBuser = "krco253";
+        String DBpassword = "veronica";
         //for your laptop DBhost = "localhost", for your VM instance DBhost = [your account].cs.uky.edu
         String DBhost = "localhost";
         String DBname = "SMPDB";

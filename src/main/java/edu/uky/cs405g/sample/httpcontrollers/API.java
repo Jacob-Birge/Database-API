@@ -391,8 +391,6 @@ public class API {
                 storyInfo.put(key, input);
             }
 
-            //check timestamp format
-
             //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(storyInfo);
             if(teamMap.isEmpty()){
@@ -407,14 +405,18 @@ public class API {
                 if (story == 1) {
                     responseString = "{\"status\": \"1\"}\n";
                 }
+                else if (story == 1048){
+                    responseString = "{\"status\":\"-2\", "
+                            +"\"error\":\"Must include chapter\"}\n";
+                }
                 //SQL constraint exception
-                else if (story == -2){
+                else if (story != 0){
                     responseString = "{\"status\":\"-2\", "
                             +"\"error\":\"SQL Constraint Exception\"}\n";
                 }
                 //some other exeption
                 else{
-                    responseString = "{\"status\": \"0\",\"error\":\"invalid story info\"}\n";
+                    responseString = "{\"status\": \"0\",\"error\":\"invalid expires date\"}\n";
                 }
             }
         //catch any exceptions that may occur
