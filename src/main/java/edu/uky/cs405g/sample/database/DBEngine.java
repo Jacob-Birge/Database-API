@@ -324,31 +324,38 @@ public class DBEngine {
             Statement selectStmt = connection.createStatement();
             Statement blockedStmt = connection.createStatement();
             Statement insertStmt = connection.createStatement();
-            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingFollow + "\";";
-            ResultSet result = selectStmt.executeQuery(Query);
+            try {
+                String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingFollow + "\";";
+                ResultSet result = selectStmt.executeQuery(Query);
 
-            if (result.next()) {
-                String idnum = result.getString("idnum");
-                Query = "SELECT blocked FROM Block WHERE idnum ="+userToBeFollowed+";";
-                ResultSet resultBlock = blockedStmt.executeQuery(Query);
-                if (resultBlock.next()){
-                    StatusCode = 0;
+                if (result.next()) {
+                    String idnum = result.getString("idnum");
+                    Query = "SELECT blocked FROM Block WHERE idnum =" + userToBeFollowed + ";";
+                    ResultSet resultBlock = blockedStmt.executeQuery(Query);
+                    if (resultBlock.next()) {
+                        StatusCode = 0;
+                    } else {
+                        Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
+                        int updateStatus = insertStmt.executeUpdate(Query);
+                        StatusCode = 1;
+                    }
+                } else {
+                    StatusCode = -1;
                 }
-                else {
-                    Query = "INSERT INTO Follows (follower, followed) VALUES (" + idnum + "," + userToBeFollowed + ");";
-                    int updateStatus = insertStmt.executeUpdate(Query);
-                    StatusCode = 1;
-                }
-            }
-            else {
-                StatusCode = -1;
-            }
 
-            result.close();
-            selectStmt.close();
-            blockedStmt.close();
-            insertStmt.close();
-            connection.close();
+                result.close();
+                selectStmt.close();
+                blockedStmt.close();
+                insertStmt.close();
+                connection.close();
+            }
+            catch(SQLException ex){
+                selectStmt.close();
+                blockedStmt.close();
+                insertStmt.close();
+                connection.close();
+                return -2;
+            }
         }
         catch(Exception ex) {
             StatusCode = -1;
@@ -364,31 +371,38 @@ public class DBEngine {
             Statement selectStmt = connection.createStatement();
             Statement followingStmt = connection.createStatement();
             Statement deleteStmt = connection.createStatement();
-            String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingUnfollow + "\";";
-            ResultSet result = selectStmt.executeQuery(Query);
+            try {
+                String Query = "SELECT idnum FROM Identity WHERE HANDLE =\"" + userRequestingUnfollow + "\";";
+                ResultSet result = selectStmt.executeQuery(Query);
 
-            if (result.next()) {
-                String idnum = result.getString("idnum");
-                Query = "SELECT followed FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
-                ResultSet resultFollow = followingStmt.executeQuery(Query);
-                if (!resultFollow.next()){
-                    StatusCode = 0;
+                if (result.next()) {
+                    String idnum = result.getString("idnum");
+                    Query = "SELECT followed FROM Follows WHERE follower =" + idnum + " AND followed =" + userToBeUnfollowed + ";";
+                    ResultSet resultFollow = followingStmt.executeQuery(Query);
+                    if (!resultFollow.next()) {
+                        StatusCode = 0;
+                    } else {
+                        Query = "DELETE FROM Follows WHERE follower =" + idnum + " AND followed =" + userToBeUnfollowed + ";";
+                        int deleteStatus = deleteStmt.executeUpdate(Query);
+                        StatusCode = 1;
+                    }
+                } else {
+                    StatusCode = -1;
                 }
-                else {
-                    Query = "DELETE FROM Follows WHERE follower ="+idnum+" AND followed ="+userToBeUnfollowed+";";
-                    int deleteStatus = deleteStmt.executeUpdate(Query);
-                    StatusCode = 1;
-                }
-            }
-            else {
-                StatusCode = -1;
-            }
 
-            result.close();
-            selectStmt.close();
-            followingStmt.close();
-            deleteStmt.close();
-            connection.close();
+                result.close();
+                selectStmt.close();
+                followingStmt.close();
+                deleteStmt.close();
+                connection.close();
+            }
+            catch(SQLException ex){
+                selectStmt.close();
+                followingStmt.close();
+                deleteStmt.close();
+                connection.close();
+                return -2;
+            }
         }
         catch(Exception ex) {
             StatusCode = -1;

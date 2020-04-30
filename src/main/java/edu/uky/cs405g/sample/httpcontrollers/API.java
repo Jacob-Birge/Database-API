@@ -161,6 +161,13 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : myMap.keySet()) {
+                String input = myMap.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                myMap.put(key, input);
+            }
             String handleVal = myMap.get("handle");
             String passVal = myMap.get("password");
             String fullnameVal = myMap.get("fullname");
@@ -226,6 +233,13 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : myMap.keySet()) {
+                String input = myMap.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                myMap.put(key, input);
+            }
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(myMap);
             if (teamMap.isEmpty()){
                 responseString = "{\"status\":-10, "
@@ -289,6 +303,13 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
             Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : userInfo.keySet()) {
+                String input = userInfo.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                userInfo.put(key, input);
+            }
             //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
             if (teamMap.isEmpty()){
@@ -449,6 +470,13 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : myMap.keySet()) {
+                String input = myMap.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                myMap.put(key, input);
+            }
             String handle = myMap.get("handle");
 
             // Validating User
@@ -476,6 +504,12 @@ public class API {
             else if (ResponseStatus == -1){
                 responseString = "{\"status\":-1, "
                         +"\"error\":\"User to be followed does not exist\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == -2){
+                responseString = "{\"status\":-2, "
+                        +"\"error\":\"SQL Constraint Exception\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
@@ -514,6 +548,13 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : myMap.keySet()) {
+                String input = myMap.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                myMap.put(key, input);
+            }
             String handle = myMap.get("handle");
 
             // Validating User
@@ -541,6 +582,12 @@ public class API {
             else if (ResponseStatus == -1){
                 responseString = "{\"status\":-1, "
                         +"\"error\":\"User to be unfollowed does not exist\"}\n";
+                return Response.ok(responseString)
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+            else if (ResponseStatus == -2){
+                responseString = "{\"status\":-2, "
+                        +"\"error\":\"SQL Constraint Exception\"}\n";
                 return Response.ok(responseString)
                         .header("Access-Control-Allow-Origin", "*").build();
             }
@@ -580,6 +627,13 @@ public class API {
             }
             String jsonString = crunchifyBuilder.toString();
             Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : userInfo.keySet()) {
+                String input = userInfo.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                userInfo.put(key, input);
+            }
 
             //validate the user
             Map<String,String> teamMap = Launcher.dbEngine.validateUser(userInfo);
@@ -630,6 +684,13 @@ public class API {
             String jsonString = crunchifyBuilder.toString();
 
             Map<String, String> userInfo = gson.fromJson(jsonString, mapType);
+            //filter out quotes from input
+            for (String key : userInfo.keySet()) {
+                String input = userInfo.get(key);
+                input = input.replace("\"", "");
+                input = input.replace("\'", "");
+                userInfo.put(key, input);
+            }
             Map<String,String> validation = Launcher.dbEngine.validateUser(userInfo);
             if (validation.isEmpty()){
                 responseString = "{\"status\":\"-10\", "
