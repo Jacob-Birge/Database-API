@@ -586,12 +586,24 @@ public class DBEngine {
             queryString = "SELECT 'story' as type, i.handle as handle, s.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp "
                     + "FROM Story as s join Identity as i on i.idnum = s.idnum WHERE s.idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
                     + "AND s.idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
-                    + "AND s.tstamp >= ? AND s.tstamp <= ? AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)";
+                    + "AND s.tstamp >= ? AND s.tstamp <= ? AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)"
+                    + "UNION SELECT 'reprint' as type, i.handle as handle, s.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp "
+                    + "from Reprint as r join Story as s on r.sidnum = s.sidnum join Identity as i on s.idnum = i.idnum"
+                    + "where r.idnum IN (select followed from Follows where follower = ?) "
+                    + "AND s.idnum NOT IN (select idnum from Block where blocked = ?) "
+                    + "AND s.tstamp >= ? AND s.tstamp <= ? "
+                    + "AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)";
+
+
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
             stmt.setString(2, idnum);
             stmt.setString(3, oldest);
             stmt.setString(4, newest);
+            stmt.setString(5, idnum);
+            stmt.setString(6, idnum);
+            stmt.setString(7, oldest);
+            stmt.setString(8, newest);
 
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
