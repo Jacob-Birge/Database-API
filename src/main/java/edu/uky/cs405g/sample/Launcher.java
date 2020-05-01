@@ -2,6 +2,11 @@ package edu.uky.cs405g.sample;
 
 // With permission from Dr. Bumgardner
 
+//Authors:  Kyle Hume
+//          Kelsey Cole
+//          Sam Armstrong
+//          Jacob Birge
+
 import com.google.gson.Gson;
 import edu.uky.cs405g.sample.database.DBEngine;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -22,8 +27,8 @@ public class Launcher {
         gson = new Gson();
 
         //Database Client initialization
-        String DBuser = "kthu224";
-        String DBpassword = "Mollydog89/0";
+        String DBuser = "jtbi225";
+        String DBpassword = "Ktm200exc";
         //for your laptop DBhost = "localhost", for your VM instance DBhost = [your account].cs.uky.edu
         String DBhost = "localhost";
         String DBname = "SMPDB";

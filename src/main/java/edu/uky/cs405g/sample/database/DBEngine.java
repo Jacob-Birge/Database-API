@@ -170,12 +170,18 @@ public class DBEngine {
                 //execute the prepared statement
                 int count = stmt.executeUpdate();
             }
-            //catch SQL exceptions
+            //catch SQL constraint exceptions
             catch (SQLIntegrityConstraintViolationException throwables) {
                 //close everything and return error code
                 stmt.close();
                 connect.close();
-                return throwables.getErrorCode();
+                return -2;
+            }
+            catch (SQLException ex){
+                //close everything and return error code
+                stmt.close();
+                connect.close();
+                return ex.getErrorCode();
             }
             //catch all other exceptions
             catch (Exception throwables) {
@@ -285,7 +291,6 @@ public class DBEngine {
                 stmt.setString(1, reprintInfo.get("sidnum"));
                 stmt.setString(2, reprintInfo.get("idnum")); //idnum
                 stmt.setInt(3, like_boolean); //likeit
-
                 int count = stmt.executeUpdate();
             } catch (SQLIntegrityConstraintViolationException throwables) {
                 stmt.close();
@@ -580,53 +585,53 @@ public class DBEngine {
         int size = 0;
         try
         {
+            //connect to database
             Connection conn = ds.getConnection();
             String queryString = null;
-
+            //build prepared statement
             queryString = "SELECT 'story' as type, i.handle as handle, s.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp "
                     + "FROM Story as s join Identity as i on i.idnum = s.idnum WHERE s.idnum IN (SELECT followed FROM Follows WHERE follower = ?) "
                     + "AND s.idnum NOT IN (SELECT idnum FROM Block WHERE blocked = ?) "
                     + "AND s.tstamp >= ? AND s.tstamp <= ? AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)"
-                    + "UNION SELECT 'reprint' as type, i.handle as handle, s.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp "
-                    + "from Reprint as r join Story as s on r.sidnum = s.sidnum join Identity as i on s.idnum = i.idnum"
-                    + "where r.idnum IN (select followed from Follows where follower = ?) "
-                    + "AND s.idnum NOT IN (select idnum from Block where blocked = ?) "
-                    + "AND s.tstamp >= ? AND s.tstamp <= ? "
-                    + "AND (CURRENT_TIMESTAMP < s.expires OR s.expires IS NULL)";
-
-
+                    + "UNION " +
+                    "select 'reprint' as type, a.handle as handle, r.sidnum as sidnum, s.chapter as chapter, s.tstamp as tstamp" +
+                    " from Identity as u join " +
+                    "Follows as f on f.follower = u.idnum join Reprint as r on r.idnum = f.followed and r.likeit = false" +
+                    " join Story as s on s.sidnum = r.sidnum join Identity as a on a.idnum = s.idnum and " +
+                    "a.idnum != u.idnum where u.idnum = ? and u.idnum not in (select blocked from Block where idnum = a.idnum)" +
+                    "and s.tstamp >= ? and s.tstamp <= ? and (CURRENT_TIMESTAMP < s.expires or s.expires is NULL)";
             stmt = conn.prepareStatement(queryString);
             stmt.setString(1, idnum);
             stmt.setString(2, idnum);
             stmt.setString(3, oldest);
             stmt.setString(4, newest);
             stmt.setString(5, idnum);
-            stmt.setString(6, idnum);
-            stmt.setString(7, oldest);
-            stmt.setString(8, newest);
-
+            stmt.setString(6, oldest);
+            stmt.setString(7, newest);
+            //execute prepared statement
             ResultSet rs = stmt.executeQuery();
+            //append each story retrieved to a list
             while (rs.next()) {
+                //put story info in a map
                 Map<String,String> thisPost = new HashMap<String, String>();
-                String type = rs.getString("type");
-                thisPost.put("type", type);
-                String author = rs.getString("handle");
-                thisPost.put("author", author);
-                String sidnum = rs.getString("sidnum");
-                thisPost.put("sidnum", sidnum);
-                String chapter = rs.getString("chapter");
-                thisPost.put("chapter", chapter);
-                String posted = rs.getString("tstamp");
-                thisPost.put("posted", posted);
+                thisPost.put("type", rs.getString("type"));
+                thisPost.put("author", rs.getString("handle"));
+                thisPost.put("sidnum", rs.getString("sidnum"));
+                thisPost.put("chapter", rs.getString("chapter"));
+                thisPost.put("posted", rs.getString("tstamp"));
+                //add map to list
                 timeline.add(thisPost);
             }
+            //close everything
             rs.close();
             stmt.close();
             conn.close();
         }
+        //catch any exceptions that may occur
         catch(Exception ex) {
             ex.printStackTrace();
         }
+        //return list of maps containing each story's info
         return timeline;
     } // getTimeline()
 } // class DBEngine

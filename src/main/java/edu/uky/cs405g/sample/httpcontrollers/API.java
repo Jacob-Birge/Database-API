@@ -253,15 +253,9 @@ public class API {
                 usersInfo.put("userId", teamMap.get("idnum"));
                 usersInfo.put("otherUserId", idnum);
                 Integer isBlocked = Launcher.dbEngine.isBlocked(usersInfo);
-                // user is blocked
-                if (isBlocked == 1){
-                    responseString = "{\"status\":\"0\", "
-                            +"\"error\":\"blocked\"}\n";
-                }
-                // other user DNE
-                else if (isBlocked == -1){
-                    responseString = "{\"status\":\"-1\", "
-                            +"\"error\":\"User to be followed does not exist\"}\n";
+                // user is blocked or other user DNE
+                if (isBlocked == 1 || isBlocked == -1){
+                    responseString = "{}\n";
                 }
 
                 else {
@@ -423,18 +417,17 @@ public class API {
                 if (story == 1) {
                     responseString = "{\"status\": \"1\"}\n";
                 }
-                else if (story == 1048){
-                    responseString = "{\"status\":\"-2\", "
-                            +"\"error\":\"Must include chapter\"}\n";
-                }
                 //SQL constraint exception
-                else if (story != 0){
+                else if (story == -2){
                     responseString = "{\"status\":\"-2\", "
                             +"\"error\":\"SQL Constraint Exception\"}\n";
                 }
                 //some other exeption
-                else{
+                else if (story == 1292){
                     responseString = "{\"status\": \"0\",\"error\":\"invalid expires date\"}\n";
+                }
+                else {
+                    responseString = "{\"status\": \"0\",\"error\":\"an error occurred\"}\n";
                 }
             }
         //catch any exceptions that may occur
